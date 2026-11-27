@@ -11,7 +11,7 @@ publish = false
 # Web
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
-tower-http = { version = "0.6", features = ["cors", "trace", "fs", "compression-gzip"] }
+tower-http = { version = "0.7", features = ["cors", "trace", "fs", "compression-gzip"] }
 
 # Database
 sqlx = { version = "0.8", default-features = false, features = [
