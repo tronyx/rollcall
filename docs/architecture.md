@@ -12,7 +12,7 @@ Self-hosted 3D printer filament inventory. One user per instance (no accounts in
 | DB access | `sqlx` with `query!`/`query_as!` macros, offline mode (`.sqlx/` committed) | Compile-time checked SQL; CI builds without a live DB via `SQLX_OFFLINE=true` |
 | Database | PostgreSQL 18 | `uuidv7()` time-ordered keys (new in 18), `UNIQUE NULLS NOT DISTINCT`, `pg_trgm` search |
 | Scraping | `reqwest` (rustls) + `scraper` | Pure Rust, no OpenSSL headaches in Docker |
-| Frontend | SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind 4, `adapter-static` SPA | Built to static files and served by the Rust binary, so deployment is one container plus Postgres |
+| Frontend | SvelteKit 3 + Svelte 5 (runes) + TypeScript 6 + Tailwind 4 + Vite 8, `adapter-static` SPA | Built to static files and served by the Rust binary, so deployment is one container plus Postgres |
 | Errors | `thiserror` for domain errors, a single `AppError` mapped to JSON responses | Consistent `{ "error": { "code", "message" } }` |
 | Config | env vars via `dotenvy` + a typed `Config` struct | `DATABASE_URL`, `BIND_ADDR`, `STATIC_DIR`, scraper settings, optional `ANTHROPIC_API_KEY` |
 
@@ -84,9 +84,8 @@ rollcall/
 │       ├── api.rs               # #[sqlx::test] end-to-end API tests
 │       └── fixtures/            # saved pages for scraper tests (no live network in CI)
 ├── frontend/
-│   ├── package.json
-│   ├── svelte.config.js
-│   ├── vite.config.ts           # /api proxy in dev
+│   ├── package.json             # #lib/* subpath import for src/lib
+│   ├── vite.config.ts           # SvelteKit options (adapter-static), /api proxy in dev
 │   └── src/
 │       ├── app.css              # Tailwind
 │       ├── lib/

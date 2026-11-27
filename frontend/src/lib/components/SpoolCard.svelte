@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { api, ApiError } from '$lib/api/client';
-	import type { Spool, WeightAdjustment, WeightEvent } from '$lib/api/types';
-	import { grams, levelColor } from '$lib/util/format';
+	import { api, ApiError } from '#lib/api/client.ts';
+	import type { Spool, WeightAdjustment, WeightEvent } from '#lib/api/types.ts';
+	import { grams, levelColor } from '#lib/util/format.ts';
 	import ColorSwatch from './ColorSwatch.svelte';
 
 	let { spool, onChanged }: { spool: Spool; onChanged: (s: Spool) => void } = $props();

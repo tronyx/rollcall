@@ -43,3 +43,9 @@ updates:
     groups:
       packages:
         update-types: ["minor", "patch"]
+    ignore:
+      # TypeScript 7 (the native compiler) has no JavaScript API yet, which
+      # svelte-check and SvelteKit 3 need; they accept TypeScript 6 only.
+      # Remove this once svelte-check supports 7.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]

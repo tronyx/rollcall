@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { api, ApiError } from '$lib/api/client';
+	import { api, ApiError } from '#lib/api/client.ts';
 	import type {
 		Brand,
 		InventoryStats,
@@ -7,11 +7,11 @@
 		Material,
 		Spool,
 		SpoolFilter
-	} from '$lib/api/types';
-	import AddSpoolModal from '$lib/components/AddSpoolModal.svelte';
-	import FilterBar from '$lib/components/FilterBar.svelte';
-	import SpoolCard from '$lib/components/SpoolCard.svelte';
-	import StatTiles from '$lib/components/StatTiles.svelte';
+	} from '#lib/api/types.ts';
+	import AddSpoolModal from '#lib/components/AddSpoolModal.svelte';
+	import FilterBar from '#lib/components/FilterBar.svelte';
+	import SpoolCard from '#lib/components/SpoolCard.svelte';
+	import StatTiles from '#lib/components/StatTiles.svelte';
 	import { onMount } from 'svelte';
 
 	let spools = $state<Spool[]>([]);
