@@ -7,6 +7,8 @@ pub struct Config {
     pub bind_addr: String,
     /// Directory holding the built SvelteKit app. When set, the backend serves it.
     pub static_dir: Option<PathBuf>,
+    /// Where uploaded photos are stored. Created at startup if missing.
+    pub upload_dir: PathBuf,
     /// Extra allowed CORS origin, e.g. the Vite dev server.
     pub cors_origin: Option<String>,
     pub scraper: ScraperConfig,
@@ -71,6 +73,9 @@ impl Config {
             database_url,
             bind_addr: env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".into()),
             static_dir: env::var("STATIC_DIR").ok().map(PathBuf::from),
+            upload_dir: env::var("UPLOAD_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| PathBuf::from("uploads")),
             cors_origin: env::var("CORS_ORIGIN").ok(),
             scraper,
             llm,

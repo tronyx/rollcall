@@ -354,6 +354,8 @@ export interface Equipment {
 	notes: string | null;
 	created_at: string;
 	updated_at: string;
+	/** The first photo, shown on the card. */
+	photo_url: string | null;
 }
 
 export interface SaveEquipment {
@@ -382,4 +384,21 @@ export interface EquipmentFilter {
 	printer?: string;
 	q?: string;
 	include_retired?: boolean;
+}
+
+/** Whose photo it is: exactly one of these. */
+export type PhotoOwner = { spool_id: string } | { filament_id: string } | { equipment_id: string };
+
+export interface Photo {
+	id: string;
+	spool_id: string | null;
+	filament_id: string | null;
+	equipment_id: string | null;
+	content_type: string;
+	size_bytes: number;
+	original_name: string | null;
+	caption: string | null;
+	created_at: string;
+	/** Where the image is served: `/api/photos/{id}/file`. */
+	url: string;
 }

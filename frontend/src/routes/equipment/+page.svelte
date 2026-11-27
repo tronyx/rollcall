@@ -7,9 +7,11 @@
 		Equipment,
 		EquipmentCategory,
 		EquipmentFilter,
+		Photo,
 		Printer
 	} from '#lib/api/types.ts';
 	import EquipmentForm from '#lib/components/EquipmentForm.svelte';
+	import PhotosSection from '#lib/components/PhotosSection.svelte';
 	import { filterEquipment, makerLine, usedIds } from '#lib/util/equipment.ts';
 	import { acquiredLine } from '#lib/util/format.ts';
 	import { onMount } from 'svelte';
@@ -75,6 +77,11 @@
 		}
 	}
 
+	// Keeps the card's picture in step with the item's first photo.
+	function photosChanged(id: string, photos: Photo[]) {
+		items = items.map((x) => (x.id === id ? { ...x, photo_url: photos[0]?.url ?? null } : x));
+	}
+
 	function deleted(id: string) {
 		items = items.filter((x) => x.id !== id);
 		editing = null;
@@ -131,6 +138,9 @@
 			onDeleted={deleted}
 			onCancel={() => (editing = null)}
 		/>
+		<p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+			You can add photos once it's saved.
+		</p>
 	</section>
 {/if}
 
@@ -217,9 +227,23 @@
 						onDeleted={deleted}
 						onCancel={() => (editing = null)}
 					/>
+					<div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+						<PhotosSection
+							owner={{ equipment_id: e.id }}
+							onchange={(photos) => photosChanged(e.id, photos)}
+						/>
+					</div>
 				{:else}
-					<div class="flex items-start justify-between gap-2">
-						<div class="min-w-0">
+					<div class="flex items-start gap-3">
+						{#if e.photo_url}
+							<img
+								src={e.photo_url}
+								alt=""
+								loading="lazy"
+								class="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-700"
+							/>
+						{/if}
+						<div class="min-w-0 flex-1">
 							<p class="text-xs font-medium tracking-wide text-slate-500 uppercase">
 								{e.kind ?? (e.category === 'equipment' ? 'Equipment' : 'Accessory')}
 								{#if e.retired}· retired{/if}

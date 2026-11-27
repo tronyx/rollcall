@@ -112,6 +112,7 @@ See [`backend/migrations/0001_initial_schema.sql`](../backend/migrations/0001_in
 - **Weights are net grams** (`NUMERIC(8,1)`). Tare is stored per spool so a scale weigh-in can be converted: `remaining = gross - tare`.
 - **Weight log** (`spool_weight_events`) records every deduction or weigh-in, written in the same transaction as the update to `spools.remaining_weight_g`.
 - **Tuned overrides** (`tuned_settings`) are per filament per printer, with an optional "any printer" row. The `effective_print_settings` view resolves printer override, then general override, then manufacturer value.
+- **Photos** (`photos`) belong to exactly one spool, filament, or piece of equipment (a `CHECK` on `num_nonnulls`) and are deleted with it. The image is a file named `<id>.<ext>` in `UPLOAD_DIR`; the row keeps its type, size, and caption. The type is read from the file's first bytes, and the file is served with `nosniff` and a sandboxing CSP. At startup, files no row names are removed.
 - **Keys are UUIDv7** (`uuidv7()`, PostgreSQL 18), so new rows sort by creation time and index inserts stay local.
 - **TD value** (HueForge transmission distance) is stored per filament.
 - **Dashboard** reads `inventory_stats` and `spool_inventory`; the low-stock threshold lives in `app_settings` (default 200 g).

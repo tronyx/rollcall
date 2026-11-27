@@ -9,11 +9,13 @@ pub mod routes;
 pub mod scraper;
 
 use sqlx::PgPool;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 /// Shared state handed to every axum handler.
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
     pub scraper: Arc<scraper::ScraperService>,
+    /// Folder holding uploaded photos (`UPLOAD_DIR`).
+    pub uploads: Arc<PathBuf>,
 }

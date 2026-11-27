@@ -15,6 +15,7 @@
 	import FilamentEditForm from '#lib/components/FilamentEditForm.svelte';
 	import SpoolEditForm from '#lib/components/SpoolEditForm.svelte';
 	import HumiditySection from '#lib/components/HumiditySection.svelte';
+	import PhotosSection from '#lib/components/PhotosSection.svelte';
 	import TunedSettingsSection from '#lib/components/TunedSettingsSection.svelte';
 	import {
 		acquiredLine,
@@ -528,6 +529,23 @@
 			{/if}
 
 			<HumiditySection spoolId={spool.id} {card} />
+
+			<PhotosSection
+				owner={{ spool_id: spool.id }}
+				title="Photos of this spool"
+				hint="The label, the box, how it printed."
+				{card}
+			/>
+			{#if filament}
+				<PhotosSection
+					owner={{ filament_id: filament.id }}
+					title="Filament photos"
+					hint={sharedCount !== null && sharedCount > 1
+						? `Shared by all ${sharedCount} spools of this filament.`
+						: 'Shared by every spool of this filament.'}
+					{card}
+				/>
+			{/if}
 
 			<!-- Delete -->
 			<section class={card}>

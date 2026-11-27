@@ -41,9 +41,12 @@ services:
       DATABASE_URL: postgres://rollcall:change-me@db:5432/rollcall
     ports:
       - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
 
 volumes:
   pgdata:
+  uploads:
 ```
 
 Then start it:
@@ -56,6 +59,8 @@ Open <http://localhost:8080>. Rollcall creates and updates its tables when it st
 
 > [!NOTE]
 > PostgreSQL 18 images keep their data under `/var/lib/postgresql/18/docker`, so the volume is mounted at `/var/lib/postgresql`, not at `/var/lib/postgresql/data` as with older versions.
+>
+> The `uploads` volume holds the photos you upload. Without it, they are lost when the container is replaced.
 
 ## 🛠️ From source
 

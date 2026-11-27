@@ -82,6 +82,16 @@ If you keep a hygrometer in a dry box or dryer, log its readings on the spool pa
 
 The latest reading shows a tag: **Dry** under 20%, **OK** up to 40%, and **Humid: dry it soon** above that. A line shows the trend of the last 30 readings.
 
+## 📷 Photos
+
+Add your own photos to a spool, to a filament, or to a piece of equipment or an accessory. Select **+ Add photos** and pick one or more JPEG, PNG, WebP, GIF, or AVIF images, up to 20 MB each. On a phone, you can take the photo right away.
+
+- **Photos of this spool**, on the spool page: the label, the box, a print you made with it.
+- **Filament photos**, on the spool page too: shared by every spool of that filament, so add a swatch or a benchy once.
+- **Equipment and accessories**: edit an item to add photos. The first one shows on its card.
+
+Select a photo to see it larger, add a caption, go to the next one with the arrow keys, or delete it. Deleting a spool or an item deletes its photos too. Photos are saved as files in the `UPLOAD_DIR` folder (see [Configuration](configuration.md)), so include that folder in your [backups](docker.md#-backups).
+
 ## 📍 Locations and status
 
 A spool can have a storage location, such as a dry box or an AMS slot, and a status: `sealed`, `active`, `drying`, `empty`, or `archived`.
@@ -131,5 +141,7 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET`, `POST /api/printers`; `PUT`, `DELETE /api/printers/{id}` | Printers |
 | `GET`, `PUT /api/settings` | Low-stock threshold and default currency |
 | `GET`, `POST /api/equipment`; `GET`, `PUT`, `DELETE /api/equipment/{id}` | Equipment and accessories. Filters: `category`, `brand_id`, `printer` (an id or `none`), `q`, `include_retired` |
+| `GET /api/photos?spool_id=` (or `filament_id`, `equipment_id`); `POST /api/photos` | List photos, or upload one as `multipart/form-data` with an owner id, a `file`, and an optional `caption` |
+| `GET`, `PATCH`, `DELETE /api/photos/{id}`; `GET /api/photos/{id}/file` | A photo's details, its caption, deleting it, and the image itself |
 | `GET /api/stats` | Dashboard numbers |
 | `GET /api/health` | Health check |
