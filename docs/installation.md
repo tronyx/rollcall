@@ -7,7 +7,7 @@ Rollcall is one container (the API server with the web interface built in) plus 
 ## 📋 Requirements
 
 - To run it: Docker with Docker Compose.
-- To build it from source: Rust (stable, 1.85 or newer), Node.js 22, and Docker for the database.
+- To build it from source: Rust (stable, 1.85 or newer), Node.js 26, and Docker for the database.
 
 The image runs on `amd64` and `arm64`, so a Raspberry Pi 4 or 5, or a NAS with an ARM processor, works too.
 

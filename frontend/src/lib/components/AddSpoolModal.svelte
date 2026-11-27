@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { api, ApiError } from '$lib/api/client';
+	import { api, ApiError } from '#lib/api/client.ts';
 	import type {
 		FieldSource,
 		Location,
@@ -8,7 +8,7 @@
 		ParseResult,
 		Spool,
 		SpoolStatus
-	} from '$lib/api/types';
+	} from '#lib/api/types.ts';
 	import ColorSwatch from './ColorSwatch.svelte';
 
 	let {

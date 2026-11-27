@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { InventoryStats } from '$lib/api/types';
-	import { kg } from '$lib/util/format';
+	import type { InventoryStats } from '#lib/api/types.ts';
+	import { kg } from '#lib/util/format.ts';
 
 	let {
 		stats,

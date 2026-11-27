@@ -34,7 +34,7 @@ Found a security vulnerability? Please don't open an issue: see the [security po
 
 3. Make your change. Keep each pull request to one change.
 
-4. Start PostgreSQL and run the checks. You need Rust (stable), Node 22 and Docker:
+4. Start PostgreSQL and run the checks. You need Rust (stable), Node 26 and Docker:
 
    ```bash
    docker compose up -d db

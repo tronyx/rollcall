@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Brand, Location, Material, SpoolFilter } from '$lib/api/types';
+	import type { Brand, Location, Material, SpoolFilter } from '#lib/api/types.ts';
 
 	let {
 		filter = $bindable(),

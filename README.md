@@ -34,7 +34,7 @@ Open <http://localhost:8080>. Rollcall sets up its database tables when it start
 
 ### 🛠️ From source
 
-You need Rust (stable), Node.js 22, and Docker for the database.
+You need Rust (stable), Node.js 26, and Docker for the database.
 
 ```bash
 git clone https://github.com/tronyx/rollcall.git
