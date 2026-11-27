@@ -10,6 +10,7 @@ use tower_http::{
 
 mod filaments;
 mod lookups;
+mod settings;
 mod spools;
 mod stats;
 
@@ -21,6 +22,7 @@ pub fn api(state: AppState) -> Router {
         .merge(filaments::routes())
         .merge(lookups::routes())
         .merge(stats::routes())
+        .merge(settings::routes())
         .with_state(state)
 }
 

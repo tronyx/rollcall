@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE locations SET name = $2, kind = $3, description = $4, sort_order = $5\n        WHERE id = $1\n        RETURNING id, name, kind AS \"kind: LocationKind\", description, sort_order\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "kind: LocationKind",
+        "type_info": {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "sort_order",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "1a037eae23553f57be1df98ec843748dc07eb5b3ecb1a2be74ee97312f38439d"
+}

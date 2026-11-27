@@ -44,3 +44,37 @@ pub struct NewLocation {
 fn default_location_kind() -> LocationKind {
     LocationKind::Other
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Printer {
+    pub id: Uuid,
+    pub name: String,
+    pub model: Option<String>,
+    pub nozzle_diameter_mm: Decimal,
+    pub is_default: bool,
+    pub notes: Option<String>,
+}
+
+/// `POST /api/printers` and `PUT /api/printers/{id}`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct NewPrinter {
+    pub name: String,
+    pub model: Option<String>,
+    #[serde(default = "default_nozzle")]
+    pub nozzle_diameter_mm: Decimal,
+    /// Making one printer the default clears it on the others.
+    #[serde(default)]
+    pub is_default: bool,
+    pub notes: Option<String>,
+}
+
+fn default_nozzle() -> Decimal {
+    Decimal::new(40, 2)
+}
+
+/// The single row of instance-wide settings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppSettings {
+    pub low_stock_threshold_g: Decimal,
+    pub default_currency: String,
+}

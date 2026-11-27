@@ -44,6 +44,14 @@ The page has its own address, `/spools/<id>`, so you can bookmark it.
 
 A spool can have a storage location, such as a dry box or an AMS slot, and a status: `sealed`, `active`, `drying`, `empty`, or `archived`.
 
+## ⚙️ Settings
+
+Select **⚙️ Settings** at the top of the list. The settings page has three parts:
+
+- **General**: the weight under which a spool counts as low stock (200 g by default), and the currency for new spools that don't name one.
+- **Locations**: add, rename, reorder, and delete the places where your spools live. Lower order numbers come first in lists. When you delete a location, its spools keep everything else and just lose the location.
+- **Printers**: add your printers with their nozzle size, and pick one as the default. Tuned print settings per printer will use these.
+
 ## 📊 Dashboard
 
 The top of the page shows the spool count, the kilograms left, and the spools that are low (under 200 g by default). Search and filter by material, brand, color, and location.
@@ -61,6 +69,9 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET /api/filaments`, `GET /api/filaments/{id}` | Filament products |
 | `PUT /api/filaments/{id}` | Change a filament's details (for every spool that uses it) |
 | `POST /api/filaments/parse-url` | Read a product page and return a draft |
-| `GET /api/brands`, `GET /api/materials`, `GET /api/locations` | Lookup lists |
+| `GET /api/brands`, `GET /api/materials` | Lookup lists |
+| `GET`, `POST /api/locations`; `PUT`, `DELETE /api/locations/{id}` | Storage locations |
+| `GET`, `POST /api/printers`; `PUT`, `DELETE /api/printers/{id}` | Printers |
+| `GET`, `PUT /api/settings` | Low-stock threshold and default currency |
 | `GET /api/stats` | Dashboard numbers |
 | `GET /api/health` | Health check |
