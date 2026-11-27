@@ -16,6 +16,10 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 - A dashboard with the spool count, kilograms left, low-stock alerts, and search and filters.
 - A Docker image for `amd64` and `arm64`, published to `ghcr.io/tronyx/rollcall` as `develop`.
 
+### Security
+
+- The Docker image is now built on Debian 13 (trixie) instead of Debian 12, which clears the 8 PAM vulnerabilities (CVE-2025-6020, CVE-2024-22365) that Trivy reported in the Debian 12 base.
+
 ### Project
 
 - The frontend now uses SvelteKit 3, Vite 8, vite-plugin-svelte 7, TypeScript 6, Vitest 5 and Node.js 26. The SvelteKit settings moved from `svelte.config.js` into `vite.config.ts`, and `$lib` imports became `#lib` (a `package.json` subpath import), as SvelteKit 3 requires. Dependabot skips TypeScript 7 for now, since svelte-check can't use it yet.
