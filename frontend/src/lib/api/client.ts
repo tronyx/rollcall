@@ -1,12 +1,15 @@
 import type {
 	Brand,
 	CreateSpool,
+	Filament,
 	InventoryStats,
 	Location,
 	Material,
 	ParseResult,
 	Spool,
 	SpoolFilter,
+	UpdateFilament,
+	UpdateSpool,
 	WeightAdjustment,
 	WeightChange,
 	WeightEvent
@@ -60,10 +63,15 @@ export const api = {
 	spools: (filter: SpoolFilter = {}) => request<Spool[]>('GET', `/spools${toQuery(filter)}`),
 	spool: (id: string) => request<Spool>('GET', `/spools/${id}`),
 	createSpool: (body: CreateSpool) => request<Spool>('POST', '/spools', body),
+	updateSpool: (id: string, body: UpdateSpool) => request<Spool>('PUT', `/spools/${id}`, body),
 	deleteSpool: (id: string) => request<void>('DELETE', `/spools/${id}`),
 	adjustWeight: (id: string, body: WeightAdjustment) =>
 		request<WeightChange>('POST', `/spools/${id}/weight`, body),
-	weightEvents: (id: string) => request<WeightEvent[]>('GET', `/spools/${id}/weight-events`),
+	weightEvents: (id: string, limit = 50) =>
+		request<WeightEvent[]>('GET', `/spools/${id}/weight-events?limit=${limit}`),
+	filament: (id: string) => request<Filament>('GET', `/filaments/${id}`),
+	updateFilament: (id: string, body: UpdateFilament) =>
+		request<Filament>('PUT', `/filaments/${id}`, body),
 	parseUrl: (url: string) => request<ParseResult>('POST', '/filaments/parse-url', { url }),
 	brands: () => request<Brand[]>('GET', '/brands'),
 	materials: () => request<Material[]>('GET', '/materials'),

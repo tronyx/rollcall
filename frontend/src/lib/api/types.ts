@@ -80,6 +80,61 @@ export interface NewFilament extends FilamentSpecs {
 	scrape_raw?: unknown;
 }
 
+/** A filament product, as `GET /api/filaments/{id}` returns it. */
+export interface Filament extends FilamentSpecs {
+	id: string;
+	brand_id: string;
+	brand_name: string;
+	material_id: string;
+	material_code: string;
+	product_name: string | null;
+	color_name: string;
+	color_hex: string | null;
+	color_hex_secondary: string | null;
+	diameter_mm: number;
+	nominal_weight_g: number | null;
+	typical_tare_g: number | null;
+	source_url: string | null;
+	image_url: string | null;
+	spec_source: SpecSource;
+	scraped_at: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+/** `PUT /api/filaments/{id}`: replaces every field, so send them all. */
+export interface UpdateFilament extends FilamentSpecs {
+	brand_name: string;
+	material_code: string;
+	product_name: string | null;
+	color_name: string;
+	color_hex: string | null;
+	color_hex_secondary: string | null;
+	diameter_mm: number;
+	nominal_weight_g: number | null;
+	typical_tare_g: number | null;
+	source_url: string | null;
+	image_url: string | null;
+}
+
+/** `PUT /api/spools/{id}`: replaces the editable fields. Remaining weight
+ * only changes through the weight endpoint, so every change is logged. */
+export interface UpdateSpool {
+	filament_id: string;
+	label_code: string | null;
+	location_id: string | null;
+	status: SpoolStatus;
+	initial_weight_g: number;
+	tare_weight_g: number | null;
+	purchase_price: number | null;
+	currency: string;
+	purchase_date: string | null;
+	vendor: string | null;
+	lot_number: string | null;
+	last_dried_at: string | null;
+	notes: string | null;
+}
+
 export interface CreateSpool {
 	filament_id?: string;
 	filament?: NewFilament;

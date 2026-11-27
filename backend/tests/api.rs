@@ -286,3 +286,68 @@ async fn serves_frontend_with_spa_fallback(pool: PgPool) {
 
     std::fs::remove_dir_all(dir).ok();
 }
+
+#[sqlx::test]
+async fn edit_filament(pool: PgPool) {
+    let app = app(pool);
+    let (status, spool) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Black", "#000000", 800.0)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let filament_id = spool["filament_id"].as_str().unwrap().to_string();
+    let uri = format!("/filaments/{filament_id}");
+
+    let edit = json!({
+        "brand_name": "polymaker",
+        "material_code": "pla",
+        "product_name": "PolyTerra",
+        "color_name": " Charcoal Black ",
+        "color_hex": "222",
+        "diameter_mm": 1.75,
+        "nozzle_temp_min_c": 190,
+        "nozzle_temp_max_c": 220,
+        "td_value": 1.2
+    });
+    let (status, f) = call(&app, Method::PUT, &uri, Some(edit.clone())).await;
+    assert_eq!(status, StatusCode::OK, "{f}");
+    assert_eq!(f["brand_name"], "Polymaker");
+    assert_eq!(f["material_code"], "PLA");
+    assert_eq!(f["color_name"], "Charcoal Black");
+    assert_eq!(f["color_hex"], "#222222");
+    assert_eq!(f["nozzle_temp_max_c"], 220);
+    // Fields left out are cleared, like the spool PUT.
+    assert_eq!(f["bed_temp_min_c"], Value::Null);
+
+    // The spool shows the new details.
+    let (_, s) = call(
+        &app,
+        Method::GET,
+        &format!("/spools/{}", spool["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert_eq!(s["brand_name"], "Polymaker");
+    assert_eq!(s["color_name"], "Charcoal Black");
+
+    // Bad input is a 400, a missing filament a 404.
+    let mut bad = edit.clone();
+    bad["material_code"] = json!("NOPE");
+    let (status, _) = call(&app, Method::PUT, &uri, Some(bad)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let mut bad = edit.clone();
+    bad["nozzle_temp_min_c"] = json!(260);
+    let (status, _) = call(&app, Method::PUT, &uri, Some(bad)).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        "/filaments/00000000-0000-7000-8000-000000000000",
+        Some(edit),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}

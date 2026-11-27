@@ -1,4 +1,10 @@
-use crate::{AppState, error::AppResult, models::Filament, repo::filaments, scraper::ParseResult};
+use crate::{
+    AppState,
+    error::AppResult,
+    models::{Filament, NewFilament},
+    repo::filaments,
+    scraper::ParseResult,
+};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -10,7 +16,7 @@ use uuid::Uuid;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/filaments", get(list))
-        .route("/filaments/{id}", get(show))
+        .route("/filaments/{id}", get(show).put(update))
         .route("/filaments/parse-url", post(parse_url))
 }
 
@@ -20,6 +26,15 @@ async fn list(State(s): State<AppState>) -> AppResult<Json<Vec<Filament>>> {
 
 async fn show(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<Json<Filament>> {
     Ok(Json(filaments::get_filament(&s.pool, id).await?))
+}
+
+/// `PUT /api/filaments/{id}`: same body as an inline filament on a new spool.
+async fn update(
+    State(s): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<NewFilament>,
+) -> AppResult<Json<Filament>> {
+    Ok(Json(filaments::update_filament(&s.pool, id, body).await?))
 }
 
 #[derive(Deserialize)]
