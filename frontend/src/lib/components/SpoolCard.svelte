@@ -84,12 +84,14 @@
 				<h3 class="truncate font-semibold">
 					<a
 						href={resolve('/spools/[id]', { id: spool.id })}
-						class="hover:underline after:absolute after:inset-0">{spool.color_name}</a
+						class="hover:underline after:absolute after:inset-0"
 					>
+						{spool.color_name}
+					</a>
 				</h3>
-				<span class="rounded-full px-2 py-0.5 text-xs font-medium {statusStyles[spool.status]}"
-					>{spool.status}</span
-				>
+				<span class="rounded-full px-2 py-0.5 text-xs font-medium {statusStyles[spool.status]}">
+					{spool.status}
+				</span>
 			</div>
 			<p class="truncate text-sm text-slate-600 dark:text-slate-400">
 				{spool.brand_name} · {spool.material_code}{spool.product_name
@@ -106,12 +108,12 @@
 
 	<div>
 		<div class="flex items-baseline justify-between text-sm">
-			<span class="text-lg font-semibold tabular-nums" class:text-red-600={spool.is_low_stock}
-				>{grams(spool.remaining_weight_g)}</span
-			>
-			<span class="text-xs text-slate-500 tabular-nums dark:text-slate-400"
-				>of {grams(spool.initial_weight_g)} · {pct}%</span
-			>
+			<span class="text-lg font-semibold tabular-nums" class:text-red-600={spool.is_low_stock}>
+				{grams(spool.remaining_weight_g)}
+			</span>
+			<span class="text-xs text-slate-500 tabular-nums dark:text-slate-400">
+				of {grams(spool.initial_weight_g)} · {pct}%
+			</span>
 		</div>
 		<div
 			class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
@@ -148,14 +150,16 @@
 				class="min-w-0 flex-1 rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-slate-300 dark:bg-slate-800 dark:ring-slate-700"
 				aria-label="Print name"
 			/>
-			<button type="submit" disabled={busy} class="{btn} bg-orange-600 text-white ring-orange-600"
-				>Log</button
-			>
+			<button type="submit" disabled={busy} class="{btn} bg-orange-600 text-white ring-orange-600">
+				Log
+			</button>
 			<button
 				type="button"
 				class="{btn} ring-slate-300 dark:ring-slate-700"
-				onclick={() => (logOpen = false)}>Cancel</button
+				onclick={() => (logOpen = false)}
 			>
+				Cancel
+			</button>
 		</form>
 	{:else}
 		<div class="flex gap-2">
@@ -164,22 +168,25 @@
 				disabled={!canDeduct}
 				onclick={() => deduct(10)}
 				class="{btn} flex-1 ring-slate-300 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-800"
-				>−10g</button
 			>
+				−10g
+			</button>
 			<button
 				type="button"
 				disabled={!canDeduct}
 				onclick={() => deduct(50)}
 				class="{btn} flex-1 ring-slate-300 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-800"
-				>−50g</button
 			>
+				−50g
+			</button>
 			<button
 				type="button"
 				disabled={!canDeduct}
 				onclick={() => (logOpen = true)}
 				class="{btn} flex-[1.4] bg-slate-900 text-white ring-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-100"
-				>Log print</button
 			>
+				Log print
+			</button>
 		</div>
 	{/if}
 
@@ -188,17 +195,19 @@
 			class="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-1.5 text-sm dark:bg-slate-800"
 			role="status"
 		>
-			<span
-				>{grams(Math.abs(lastEvent.delta_g))} deducted{lastEvent.print_name
+			<span>
+				{grams(Math.abs(lastEvent.delta_g))} deducted{lastEvent.print_name
 					? ` for ${lastEvent.print_name}`
-					: ''}</span
-			>
+					: ''}
+			</span>
 			<button
 				type="button"
 				class="font-semibold text-orange-700 dark:text-orange-400"
 				onclick={undo}
-				disabled={busy}>Undo</button
+				disabled={busy}
 			>
+				Undo
+			</button>
 		</div>
 	{/if}
 	{#if error}

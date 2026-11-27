@@ -173,8 +173,10 @@
 <nav class="mb-4">
 	<a
 		href={resolve('/')}
-		class="text-sm font-medium text-orange-700 hover:underline dark:text-orange-400">← All spools</a
+		class="text-sm font-medium text-orange-700 hover:underline dark:text-orange-400"
 	>
+		← All spools
+	</a>
 </nav>
 
 {#if loadError}
@@ -202,8 +204,9 @@
 							<h1 class="text-xl font-bold tracking-tight">{spool.color_name}</h1>
 							<span
 								class="rounded-full px-2 py-0.5 text-xs font-medium {statusStyles[spool.status]}"
-								>{spool.status}</span
 							>
+								{spool.status}
+							</span>
 						</div>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
 							{spool.brand_name} · {spool.material_code}{spool.product_name
@@ -219,12 +222,12 @@
 
 				<div class="mt-4">
 					<div class="flex items-baseline justify-between">
-						<span class="text-3xl font-bold tabular-nums" class:text-red-600={spool.is_low_stock}
-							>{grams(spool.remaining_weight_g)}</span
-						>
-						<span class="text-sm text-slate-500 tabular-nums dark:text-slate-400"
-							>of {grams(spool.initial_weight_g)} · {pct}%</span
-						>
+						<span class="text-3xl font-bold tabular-nums" class:text-red-600={spool.is_low_stock}>
+							{grams(spool.remaining_weight_g)}
+						</span>
+						<span class="text-sm text-slate-500 tabular-nums dark:text-slate-400">
+							of {grams(spool.initial_weight_g)} · {pct}%
+						</span>
 					</div>
 					<div
 						class="mt-2 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
@@ -246,17 +249,21 @@
 						type="button"
 						class={btn}
 						disabled={busy || spool.remaining_weight_g <= 0}
-						onclick={() => adjust({ kind: 'quick_adjust', delta_g: -10 })}>−10g</button
+						onclick={() => adjust({ kind: 'quick_adjust', delta_g: -10 })}
 					>
+						−10g
+					</button>
 					<button
 						type="button"
 						class={btn}
 						disabled={busy || spool.remaining_weight_g <= 0}
-						onclick={() => adjust({ kind: 'quick_adjust', delta_g: -50 })}>−50g</button
+						onclick={() => adjust({ kind: 'quick_adjust', delta_g: -50 })}
 					>
-					<button type="button" class={btn} disabled={busy} onclick={() => openMode('print')}
-						>Log print</button
-					>
+						−50g
+					</button>
+					<button type="button" class={btn} disabled={busy} onclick={() => openMode('print')}>
+						Log print
+					</button>
 					<button
 						type="button"
 						class={btn}
@@ -264,11 +271,13 @@
 						title={spool.tare_weight_g == null
 							? 'Set the empty spool weight first'
 							: 'Enter what the scale shows'}
-						onclick={() => openMode('weigh')}>Weigh</button
+						onclick={() => openMode('weigh')}
 					>
-					<button type="button" class={btn} disabled={busy} onclick={() => openMode('set')}
-						>Set remaining</button
-					>
+						Weigh
+					</button>
+					<button type="button" class={btn} disabled={busy} onclick={() => openMode('set')}>
+						Set remaining
+					</button>
 				</div>
 
 				{#if mode}
@@ -305,8 +314,9 @@
 							type="submit"
 							disabled={busy}
 							class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-							>Save</button
 						>
+							Save
+						</button>
 						<button type="button" class={btn} onclick={() => (mode = null)}>Cancel</button>
 						{#if mode === 'weigh'}
 							<p class="w-full text-xs text-slate-500 dark:text-slate-400">
@@ -356,8 +366,10 @@
 										type="button"
 										class="text-xs font-semibold text-orange-700 dark:text-orange-400"
 										disabled={busy}
-										onclick={() => undo(ev)}>Undo</button
+										onclick={() => undo(ev)}
 									>
+										Undo
+									</button>
 								{/if}
 							</li>
 						{/each}
@@ -378,8 +390,10 @@
 						<button
 							type="button"
 							class="text-sm font-semibold text-orange-700 dark:text-orange-400"
-							onclick={() => (editing = 'spool')}>Edit</button
+							onclick={() => (editing = 'spool')}
 						>
+							Edit
+						</button>
 					{/if}
 				</div>
 				{#if editing === 'spool'}
@@ -440,8 +454,10 @@
 							<button
 								type="button"
 								class="text-sm font-semibold text-orange-700 dark:text-orange-400"
-								onclick={() => (editing = 'filament')}>Edit</button
+								onclick={() => (editing = 'filament')}
 							>
+								Edit
+							</button>
 						{/if}
 					</div>
 					{#if editing === 'filament'}
@@ -479,8 +495,9 @@
 										target="_blank"
 										rel="noopener noreferrer"
 										class="text-orange-700 hover:underline dark:text-orange-400"
-										>{new URL(filament.source_url).hostname}</a
 									>
+										{new URL(filament.source_url).hostname}
+									</a>
 								</dd>
 							{/if}
 						</dl>
@@ -506,17 +523,21 @@
 							disabled={busy}
 							onclick={remove}
 							class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-							>Delete spool</button
 						>
-						<button type="button" class={btn} onclick={() => (confirmDelete = false)}>Cancel</button
-						>
+							Delete spool
+						</button>
+						<button type="button" class={btn} onclick={() => (confirmDelete = false)}>
+							Cancel
+						</button>
 					</div>
 				{:else}
 					<button
 						type="button"
 						class="text-sm font-semibold text-red-600"
-						onclick={() => (confirmDelete = true)}>Delete spool…</button
+						onclick={() => (confirmDelete = true)}
 					>
+						Delete spool…
+					</button>
 				{/if}
 			</section>
 		</div>

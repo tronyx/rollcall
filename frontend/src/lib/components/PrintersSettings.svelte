@@ -118,14 +118,16 @@
 				type="button"
 				onclick={() => (editingId = null)}
 				class="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-700"
-				>Cancel</button
 			>
+				Cancel
+			</button>
 			<button
 				type="submit"
 				disabled={busy}
 				class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-				>{editingId === 'new' ? 'Add' : 'Save'}</button
 			>
+				{editingId === 'new' ? 'Add' : 'Save'}
+			</button>
 		</div>
 	</form>
 {/snippet}
@@ -158,8 +160,9 @@
 							{#if p.is_default}
 								<span
 									class="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/60 dark:text-orange-200"
-									>default</span
 								>
+									default
+								</span>
 							{/if}
 						</p>
 						<p class="truncate text-xs text-slate-500 dark:text-slate-400">
@@ -173,8 +176,10 @@
 							type="button"
 							class="text-sm font-semibold text-red-600"
 							disabled={busy}
-							onclick={() => remove(p.id)}>Delete</button
+							onclick={() => remove(p.id)}
 						>
+							Delete
+						</button>
 						<button type="button" class="text-sm" onclick={() => (confirmId = null)}>Cancel</button>
 					{:else}
 						<button type="button" class={link} onclick={() => startEdit(p)}>Edit</button>
@@ -182,8 +187,10 @@
 							type="button"
 							class="text-sm text-slate-500 hover:text-red-600"
 							aria-label="Delete {p.name}"
-							onclick={() => (confirmId = p.id)}>Delete</button
+							onclick={() => (confirmId = p.id)}
 						>
+							Delete
+						</button>
 					{/if}
 				</div>
 			{/if}
