@@ -15,6 +15,9 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://rollcall:rollcall@localhost:5432/rollcall
+  # Compile queries against the committed .sqlx metadata (the CI database is
+  # empty until tests run migrations), so a stale cache fails the build.
+  SQLX_OFFLINE: "true"
 
 jobs:
   test:
@@ -45,10 +48,7 @@ jobs:
       - name: Format
         run: cargo fmt --check
 
-      # Build against the committed .sqlx metadata, so a stale cache fails CI.
-      - name: Clippy (offline query metadata)
-        env:
-          SQLX_OFFLINE: "true"
+      - name: Clippy
         run: cargo clippy --all-targets --locked -- -D warnings
 
       # #[sqlx::test] creates a fresh database per test and runs the migrations.
