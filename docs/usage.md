@@ -40,6 +40,21 @@ Select a spool's color name to open its page. It has:
 
 The page has its own address, `/spools/<id>`, so you can bookmark it.
 
+## 🏷️ QR labels
+
+Print a label for each spool, and scan it with your phone's camera to open that spool's page next to the printer.
+
+- **One spool**: select **🏷️ Print label** on its page.
+- **Several spools**: select **🏷️ Labels** on the dashboard. Every spool that isn't `empty` or `archived` starts out chosen; select **Choose spools** to change that.
+
+Each label has a QR code, the color, brand, material and product, the print temperatures, a swatch, and the label code (or the diameter, if the spool has no code). Choose:
+
+- **Label size**: 40 × 30, 50 × 30, 62 × 29 (Brother DK), or 70 × 40 mm.
+- **Print on**: a label printer, which prints one label per page at the label's size, or paper, which prints a sheet with cut lines.
+- **QR codes open**: the address your phone opens Rollcall at, such as `http://192.168.1.20:8080`. It starts out as the address in your browser, so change it if that's `localhost`.
+
+The browser remembers these settings. In the print dialog, choose your label printer and set the margins to none, if it asks.
+
 ## 📍 Locations and status
 
 A spool can have a storage location, such as a dry box or an AMS slot, and a status: `sealed`, `active`, `drying`, `empty`, or `archived`.

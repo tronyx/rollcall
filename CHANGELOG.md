@@ -8,6 +8,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- QR labels for spools, from the spool page or for many spools at once at `/labels`, in four sizes for label printers or as a sheet on paper. Scanning a label opens the spool's page. See [Usage](docs/usage.md#%EF%B8%8F-qr-labels).
 - A settings page: the low-stock threshold, the default currency, storage locations (add, rename, reorder, delete), and printers with a default. New endpoints: `PUT /api/locations/{id}`, `/api/printers`, and `/api/settings`. See [Usage](docs/usage.md#%EF%B8%8F-settings).
 - A page for each spool, opened from its card. It shows the full weight history and can weigh the spool, set the remaining weight, edit the spool and its filament, and delete the spool. `PUT /api/filaments/{id}` changes a filament's details. See [Usage](docs/usage.md#-the-spool-page).
 - The first version of Rollcall: a spool inventory with brands, materials, colors, weights, prices, locations, and statuses, backed by PostgreSQL 18.

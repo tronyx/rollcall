@@ -78,6 +78,12 @@
 	</h1>
 	<div class="flex items-center gap-3">
 		<a
+			href={resolve('/labels')}
+			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+		>
+			🏷️ Labels
+		</a>
+		<a
 			href={resolve('/settings')}
 			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
