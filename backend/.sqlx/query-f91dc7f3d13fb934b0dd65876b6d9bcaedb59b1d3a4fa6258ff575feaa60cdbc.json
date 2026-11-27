@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO print_slots (print_id, slot, grams, profile_name, filament_type, color_hex)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2",
+        "Numeric",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f91dc7f3d13fb934b0dd65876b6d9bcaedb59b1d3a4fa6258ff575feaa60cdbc"
+}

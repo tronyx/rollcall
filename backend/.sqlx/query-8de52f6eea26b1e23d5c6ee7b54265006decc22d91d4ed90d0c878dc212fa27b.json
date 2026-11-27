@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE print_slots SET status = 'logged', spool_id = $3, weight_event_id = $4\n        WHERE print_id = $1 AND slot = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8de52f6eea26b1e23d5c6ee7b54265006decc22d91d4ed90d0c878dc212fa27b"
+}

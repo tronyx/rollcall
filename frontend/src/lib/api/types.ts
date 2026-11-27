@@ -402,3 +402,52 @@ export interface Photo {
 	/** Where the image is served: `/api/photos/{id}/file`. */
 	url: string;
 }
+
+export type PrintSlotStatus = 'pending' | 'logged' | 'skipped';
+
+/** A print logged from OrcaSlicer or Bambu Studio. */
+export interface Print {
+	id: string;
+	name: string;
+	slicer: string | null;
+	printer_preset: string | null;
+	created_at: string;
+	slots: PrintSlot[];
+}
+
+/** One filament a print used, and the spool it came from. */
+export interface PrintSlot {
+	/** 1-based, as the slicer numbers its filaments. */
+	slot: number;
+	grams: number;
+	/** The slicer's filament preset. */
+	profile_name: string | null;
+	filament_type: string | null;
+	color_hex: string | null;
+	status: PrintSlotStatus;
+	spool_id: string | null;
+	weight_event_id: number | null;
+	/** The Rollcall filament this preset is known to be. */
+	profile_filament_id: string | null;
+	spool: {
+		label_code: string | null;
+		brand_name: string;
+		material_code: string;
+		product_name: string | null;
+		color_name: string;
+		color_hex: string | null;
+		remaining_weight_g: number;
+	} | null;
+}
+
+export interface AssignSlot {
+	spool_id?: string;
+	skip?: boolean;
+	/** Remember the preset as this spool's filament. Defaults to true. */
+	remember?: boolean;
+}
+
+export interface SlicerProfile {
+	name: string;
+	filament_id: string;
+}

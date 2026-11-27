@@ -24,6 +24,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let addOpen = $state(false);
+	let pendingPrints = $state(0);
 
 	async function loadSpools(f: SpoolFilter) {
 		try {
@@ -51,6 +52,10 @@
 	onMount(() => {
 		loadLookups().catch(() => {});
 		refreshStats();
+		api
+			.prints({ pending: true })
+			.then((p) => (pendingPrints = p.length))
+			.catch(() => {});
 	});
 
 	// Reload when filters change, debounced so typing in search doesn't spam the API.
@@ -81,26 +86,32 @@
 			href={resolve('/equipment')}
 			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
-			<span aria-hidden="true">🧰</span><span class="sr-only sm:not-sr-only sm:ml-1">
+			<span aria-hidden="true">🧰</span><span class="sr-only md:not-sr-only md:ml-1">
 				Equipment
 			</span>
+		</a>
+		<a
+			href={resolve('/prints')}
+			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+		>
+			<span aria-hidden="true">🧾</span><span class="sr-only md:not-sr-only md:ml-1">Prints</span>
 		</a>
 		<a
 			href={resolve('/labels')}
 			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
-			<span aria-hidden="true">🏷️</span><span class="sr-only sm:not-sr-only sm:ml-1">Labels</span>
+			<span aria-hidden="true">🏷️</span><span class="sr-only md:not-sr-only md:ml-1">Labels</span>
 		</a>
 		<a
 			href={resolve('/settings')}
 			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
-			<span aria-hidden="true">⚙️</span><span class="sr-only sm:not-sr-only sm:ml-1">Settings</span>
+			<span aria-hidden="true">⚙️</span><span class="sr-only md:not-sr-only md:ml-1">Settings</span>
 		</a>
 		<button
 			type="button"
 			onclick={() => (addOpen = true)}
-			class="hidden rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 sm:block"
+			class="hidden rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-sm hover:bg-orange-700 sm:block"
 		>
 			+ Add spool
 		</button>
@@ -108,6 +119,15 @@
 </header>
 
 <div class="space-y-4">
+	{#if pendingPrints}
+		<a
+			href={resolve('/prints') + '?pending'}
+			class="block rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-100 dark:ring-amber-900"
+		>
+			🧾 {pendingPrints === 1 ? '1 print needs' : `${pendingPrints} prints need`} a spool picked. Pick
+			it →
+		</a>
+	{/if}
 	<StatTiles
 		{stats}
 		lowStockActive={!!filter.low_stock}

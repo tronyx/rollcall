@@ -6,6 +6,7 @@ pub mod filaments;
 pub mod humidity;
 pub mod lookups;
 pub mod photos;
+pub mod prints;
 pub mod settings;
 pub mod spools;
 pub mod stats;

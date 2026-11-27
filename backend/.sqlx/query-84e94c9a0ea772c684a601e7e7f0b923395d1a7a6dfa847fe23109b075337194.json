@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT s.id, s.status AS \"status: SpoolStatus\"\n        FROM slicer_profiles sp\n        JOIN spools s ON s.filament_id = sp.filament_id\n        WHERE sp.name = $1 AND s.status IN ('active', 'drying', 'sealed')\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status: SpoolStatus",
+        "type_info": {
+          "Custom": {
+            "name": "spool_status",
+            "kind": {
+              "Enum": [
+                "sealed",
+                "active",
+                "drying",
+                "empty",
+                "archived"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "84e94c9a0ea772c684a601e7e7f0b923395d1a7a6dfa847fe23109b075337194"
+}
