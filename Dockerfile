@@ -2,7 +2,7 @@
 # Build from the repo root: docker build -t rollcall .
 
 # ---- Frontend ----
-FROM node:26-bookworm-slim AS frontend
+FROM node:26-trixie-slim AS frontend
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -10,7 +10,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---- Backend ----
-FROM rust:1-bookworm AS backend
+FROM rust:1-trixie AS backend
 WORKDIR /src/backend
 # sqlx checks queries against the committed .sqlx metadata instead of a live DB.
 ENV SQLX_OFFLINE=true
@@ -18,7 +18,7 @@ COPY backend/ ./
 RUN cargo build --release --locked && cp target/release/rollcall /usr/local/bin/rollcall
 
 # ---- Runtime ----
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
