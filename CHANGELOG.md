@@ -8,6 +8,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- Export tuned settings as an OrcaSlicer or Bambu Studio filament preset, based on the slicer's generic preset for the material and printer, to import with **Import Configs**. See [Usage](docs/usage.md#-export-to-your-slicer).
 - Your own photos for spools, filaments, and equipment and accessories, with captions and a viewer. The first photo of an item shows on its card. Photos are files in the new `UPLOAD_DIR` folder (`/app/uploads`, a volume, in the image). New endpoints: `/api/photos` and `/api/photos/{id}`. See [Usage](docs/usage.md#-photos).
 - Equipment and accessories at `/equipment`: kind, name, brand, model, printer, quantity, how you got it, and notes, with tabs and brand and printer filters, and a link from each printer in Settings. Retired items are hidden by default. New endpoints: `/api/equipment` and `/api/equipment/{id}`. See [Usage](docs/usage.md#-equipment-and-accessories).
 - Humidity readings for each spool (time, humidity, optional temperature and note), with a dry, OK, or humid tag and a trend line on the spool page. New endpoints: `/api/spools/{id}/humidity` and `DELETE /api/humidity/{id}`. See [Usage](docs/usage.md#-humidity).

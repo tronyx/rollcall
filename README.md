@@ -16,7 +16,7 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 - 📦 **Inventory**: brand, material, color swatch, weights, how you got it (bought or gifted, when, where from, price, and any discount), storage location (dry box, AMS slot), and status (sealed, active, drying, empty, archived).
 - ⚖️ **Quick weight updates**: `−10g`, `−50g`, and **Log print** buttons on every spool, with undo, and scale weigh-ins on the spool page. Every change is logged.
 - 🏷️ **QR labels**: print a label for one spool or a whole sheet, for label printers or paper. Scanning one opens that spool's page.
-- 🎯 **Tuned settings**: save the temperatures, flow ratio, pressure advance, retraction and more that work for each filament on each printer, next to the maker's values.
+- 🎯 **Tuned settings**: save the temperatures, flow ratio, pressure advance, retraction and more that work for each filament on each printer, next to the maker's values, and export them as OrcaSlicer or Bambu Studio filament presets.
 - 💧 **Humidity log**: record hygrometer readings for each spool, with a dry, OK, or humid tag and a trend line.
 - 🧰 **Equipment and accessories**: nozzles, AMS units, dryers, build plates, tools, and spares, with brand, printer, quantity, and how you got them, filtered by brand and printer.
 - 📷 **Photos**: add your own photos to spools, filaments, equipment, and accessories, with captions.
