@@ -170,13 +170,21 @@
 	<title>{spool ? `${spool.color_name} · ${spool.brand_name}` : 'Spool'} · Rollcall</title>
 </svelte:head>
 
-<nav class="mb-4">
+<nav class="mb-4 flex items-center justify-between gap-3">
 	<a
 		href={resolve('/')}
 		class="text-sm font-medium text-orange-700 hover:underline dark:text-orange-400"
 	>
 		← All spools
 	</a>
+	{#if spool}
+		<a
+			href="{resolve('/labels')}?ids={spool.id}"
+			class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+		>
+			🏷️ Print label
+		</a>
+	{/if}
 </nav>
 
 {#if loadError}
