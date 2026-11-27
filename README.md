@@ -13,7 +13,7 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 
 ## ✨ Features
 
-- 📦 **Inventory**: brand, material, color swatch, weights, price, purchase date, storage location (dry box, AMS slot), and status (sealed, active, drying, empty, archived).
+- 📦 **Inventory**: brand, material, color swatch, weights, how you got it (bought or gifted, when, where from, price, and any discount), storage location (dry box, AMS slot), and status (sealed, active, drying, empty, archived).
 - ⚖️ **Quick weight updates**: `−10g`, `−50g`, and **Log print** buttons on every spool, with undo, and scale weigh-ins on the spool page. Every change is logged.
 - 🏷️ **QR labels**: print a label for one spool or a whole sheet, for label printers or paper. Scanning one opens that spool's page.
 - 🎯 **Tuned settings**: save the temperatures, flow ratio, pressure advance, retraction and more that work for each filament on each printer, next to the maker's values.

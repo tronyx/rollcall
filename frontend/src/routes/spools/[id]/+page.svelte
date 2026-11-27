@@ -16,7 +16,7 @@
 	import SpoolEditForm from '#lib/components/SpoolEditForm.svelte';
 	import TunedSettingsSection from '#lib/components/TunedSettingsSection.svelte';
 	import {
-		dateOnly,
+		acquiredLine,
 		dateTime,
 		eventLabel,
 		grams,
@@ -421,17 +421,20 @@
 						<dd>{grams(spool.initial_weight_g)}</dd>
 						<dt class="text-slate-500">Empty spool</dt>
 						<dd>{spool.tare_weight_g != null ? grams(spool.tare_weight_g) : '—'}</dd>
+						<dt class="text-slate-500">Acquired</dt>
+						<dd>{acquiredLine(spool) ?? '—'}</dd>
 						<dt class="text-slate-500">Price</dt>
 						<dd>
 							{spool.purchase_price != null
 								? `${spool.purchase_price.toFixed(2)} ${spool.currency}`
 								: '—'}
-						</dd>
-						<dt class="text-slate-500">Purchased</dt>
-						<dd>
-							{spool.purchase_date ? dateOnly(spool.purchase_date) : '—'}{spool.vendor
-								? ` from ${spool.vendor}`
-								: ''}
+							{#if spool.discounted}
+								<span
+									class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+								>
+									🏷️ {spool.discount_note ?? 'Discounted'}
+								</span>
+							{/if}
 						</dd>
 						<dt class="text-slate-500">Lot</dt>
 						<dd>{spool.lot_number ?? '—'}</dd>

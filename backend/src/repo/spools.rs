@@ -2,8 +2,8 @@ use super::{contains_pattern, filaments};
 use crate::{
     error::{AppError, AppResult},
     models::{
-        CreateSpool, LocationKind, SpoolFilter, SpoolStatus, SpoolView, UpdateSpool,
-        WeightAdjustment, WeightEvent, WeightEventKind, trim_opt,
+        AcquisitionKind, CreateSpool, LocationKind, SpoolFilter, SpoolStatus, SpoolView,
+        UpdateSpool, WeightAdjustment, WeightEvent, WeightEventKind, trim_opt,
     },
 };
 use rust_decimal::Decimal;
@@ -29,7 +29,9 @@ async fn query_spools(
             round(100 * s.remaining_weight_g / s.initial_weight_g, 1) AS "remaining_pct!",
             (s.status NOT IN ('empty', 'archived')
                 AND s.remaining_weight_g < st.low_stock_threshold_g) AS "is_low_stock!",
-            s.purchase_price, s.currency, s.purchase_date, s.vendor, s.lot_number,
+            s.purchase_price, s.currency, s.purchase_date, s.vendor,
+            s.acquisition AS "acquisition: AcquisitionKind", s.discounted, s.discount_note,
+            s.lot_number,
             s.opened_at, s.last_dried_at, s.emptied_at, s.notes, s.created_at, s.updated_at,
             f.id AS filament_id, f.product_name, f.color_name, f.color_hex, f.color_hex_secondary,
             f.diameter_mm, f.image_url,
@@ -122,11 +124,11 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
         INSERT INTO spools (
             filament_id, label_code, location_id, status, initial_weight_g, remaining_weight_g,
             tare_weight_g, purchase_price, currency, purchase_date, vendor, lot_number, notes,
-            opened_at, emptied_at
+            acquisition, discounted, discount_note, opened_at, emptied_at
         ) VALUES (
             $1, $2, $3, $4::spool_status, $5, $6, $7, $8,
             coalesce($9, (SELECT default_currency FROM app_settings)),
-            $10, $11, $12, $13,
+            $10, $11, $12, $13, $14::acquisition_kind, $15, CASE WHEN $15 THEN $16 END,
             CASE WHEN $4::spool_status IN ('active', 'drying') THEN now() END,
             CASE WHEN $4::spool_status = 'empty' THEN now() END
         )
@@ -145,6 +147,9 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
         trim_opt(input.vendor),
         trim_opt(input.lot_number),
         trim_opt(input.notes),
+        input.acquisition as AcquisitionKind,
+        input.discounted,
+        trim_opt(input.discount_note),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -181,6 +186,9 @@ pub async fn update_spool(pool: &PgPool, id: Uuid, input: UpdateSpool) -> AppRes
             lot_number       = $12,
             last_dried_at    = $13,
             notes            = $14,
+            acquisition      = $15::acquisition_kind,
+            discounted       = $16,
+            discount_note    = CASE WHEN $16 THEN $17 END,
             opened_at  = CASE WHEN $5::spool_status IN ('active', 'drying', 'empty')
                               THEN coalesce(opened_at, now()) ELSE opened_at END,
             emptied_at = CASE WHEN $5::spool_status = 'empty' THEN coalesce(emptied_at, now()) END
@@ -200,6 +208,9 @@ pub async fn update_spool(pool: &PgPool, id: Uuid, input: UpdateSpool) -> AppRes
         trim_opt(input.lot_number),
         input.last_dried_at,
         trim_opt(input.notes),
+        input.acquisition as AcquisitionKind,
+        input.discounted,
+        trim_opt(input.discount_note),
     )
     .execute(pool)
     .await?;

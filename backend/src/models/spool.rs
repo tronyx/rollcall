@@ -1,4 +1,4 @@
-use super::{LocationKind, NewFilament, SpoolStatus, WeightEventKind};
+use super::{AcquisitionKind, LocationKind, NewFilament, SpoolStatus, WeightEventKind};
 use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,9 @@ pub struct SpoolView {
     pub currency: String,
     pub purchase_date: Option<NaiveDate>,
     pub vendor: Option<String>,
+    pub acquisition: AcquisitionKind,
+    pub discounted: bool,
+    pub discount_note: Option<String>,
     pub lot_number: Option<String>,
     pub opened_at: Option<DateTime<Utc>>,
     pub last_dried_at: Option<DateTime<Utc>>,
@@ -83,6 +86,13 @@ pub struct CreateSpool {
     pub currency: Option<String>,
     pub purchase_date: Option<NaiveDate>,
     pub vendor: Option<String>,
+    /// Bought (the default), a gift, or another way.
+    #[serde(default)]
+    pub acquisition: AcquisitionKind,
+    #[serde(default)]
+    pub discounted: bool,
+    /// What the discount was. Ignored unless `discounted`.
+    pub discount_note: Option<String>,
     pub lot_number: Option<String>,
     pub notes: Option<String>,
 }
@@ -105,6 +115,13 @@ pub struct UpdateSpool {
     pub currency: String,
     pub purchase_date: Option<NaiveDate>,
     pub vendor: Option<String>,
+    /// Bought (the default), a gift, or another way.
+    #[serde(default)]
+    pub acquisition: AcquisitionKind,
+    #[serde(default)]
+    pub discounted: bool,
+    /// What the discount was. Ignored unless `discounted`.
+    pub discount_note: Option<String>,
     pub lot_number: Option<String>,
     pub last_dried_at: Option<DateTime<Utc>>,
     pub notes: Option<String>,

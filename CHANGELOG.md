@@ -8,6 +8,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- How you got each spool: bought, a gift, or other; the date; where or who it came from; the price, if known; and whether it was discounted, with a note about the deal. Adding a spool from a link fills in the store. See [Usage](docs/usage.md#-how-you-got-a-spool).
 - Tuned settings on the spool page: the temperatures, speeds, flow ratio, pressure advance, retraction, fan, and drying that work for a filament, per printer or for any printer, marked as tested when you've printed with them. New endpoints: `/api/filaments/{id}/tuned` and `DELETE /api/tuned/{id}`. See [Usage](docs/usage.md#-tuned-settings).
 - QR labels for spools, from the spool page or for many spools at once at `/labels`, in four sizes for label printers or as a sheet on paper. Scanning a label opens the spool's page. See [Usage](docs/usage.md#%EF%B8%8F-qr-labels).
 - A settings page: the low-stock threshold, the default currency, storage locations (add, rename, reorder, delete), and printers with a default. New endpoints: `PUT /api/locations/{id}`, `/api/printers`, and `/api/settings`. See [Usage](docs/usage.md#%EF%B8%8F-settings).

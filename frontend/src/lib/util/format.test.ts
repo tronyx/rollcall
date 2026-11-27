@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	acquiredLine,
+	storeName,
 	contrastText,
 	dateOnly,
 	dayOf,
@@ -64,5 +66,22 @@ describe('format', () => {
 	it('shows the local day of a timestamp', () => {
 		expect(dayOf('2026-11-27T15:00:00Z')).toMatch(/^Nov 2[67], 2026$/);
 		expect(dayOf(null)).toBe('');
+	});
+
+	it('describes how something was acquired', () => {
+		const base = { acquisition: 'bought' as const, purchase_date: null, vendor: null };
+		expect(acquiredLine(base)).toBeNull();
+		expect(acquiredLine({ ...base, purchase_date: '2026-11-27', vendor: 'Micro Center' })).toBe(
+			'Bought Nov 27, 2026 from Micro Center'
+		);
+		expect(acquiredLine({ ...base, acquisition: 'gift', vendor: 'Sam' })).toBe('Gift from Sam');
+		expect(acquiredLine({ ...base, acquisition: 'other' })).toBe('Acquired');
+	});
+
+	it('names the store a link points at', () => {
+		expect(storeName('https://www.amazon.com/dp/B0')).toBe('amazon.com');
+		expect(storeName('https://us.store.bambulab.com/products/pla')).toBe('us.store.bambulab.com');
+		expect(storeName(null)).toBe('');
+		expect(storeName('not a url')).toBe('');
 	});
 });

@@ -604,3 +604,45 @@ async fn tuned_settings_per_printer(pool: PgPool) {
     let (status, _) = call(&app, Method::DELETE, &format!("/tuned/{any_id}"), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test]
+async fn acquisition_and_discount(pool: PgPool) {
+    let app = app(pool);
+
+    // Defaults: bought, no discount.
+    let (_, plain) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#FF0000", 1000.0)),
+    )
+    .await;
+    assert_eq!(plain["acquisition"], "bought");
+    assert_eq!(plain["discounted"], false);
+    assert!(plain["discount_note"].is_null());
+
+    // A discounted purchase keeps its note; a gift can have no price.
+    let mut body = new_spool("Blue", "#0000FF", 1000.0);
+    body["discounted"] = json!(true);
+    body["discount_note"] = json!("  Black Friday, 30% off  ");
+    body["vendor"] = json!("Micro Center");
+    body["purchase_date"] = json!("2026-11-27");
+    let (status, s) = call(&app, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{s}");
+    assert_eq!(s["discount_note"], "Black Friday, 30% off");
+    assert_eq!(s["vendor"], "Micro Center");
+    assert_eq!(s["purchase_date"], "2026-11-27");
+
+    let id = s["id"].as_str().unwrap();
+    let edit = json!({
+        "filament_id": s["filament_id"], "status": "sealed", "initial_weight_g": 1000,
+        "currency": "USD", "acquisition": "gift", "vendor": "Sam",
+        "discounted": false, "discount_note": "ignored without a discount"
+    });
+    let (status, g) = call(&app, Method::PUT, &format!("/spools/{id}"), Some(edit)).await;
+    assert_eq!(status, StatusCode::OK, "{g}");
+    assert_eq!(g["acquisition"], "gift");
+    assert!(g["purchase_price"].is_null());
+    assert_eq!(g["discounted"], false);
+    assert!(g["discount_note"].is_null());
+}

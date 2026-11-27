@@ -26,6 +26,16 @@ Each spool card has these buttons:
 
 Every change is written to the spool's history.
 
+## 🛒 How you got a spool
+
+Every spool records how you got it. You fill this in when you add the spool, or later on its page:
+
+- **Acquired**: **Bought** (the default), **Gift**, or **Other**.
+- **On**: the date you got it.
+- **From**: the store, website, or person. When you add a spool from a link, this starts out as the link's site, such as `amazon.com`.
+- **Price, if known**: leave it empty for gifts or when you don't remember.
+- **Bought at a discount**: tick it and describe the deal, such as "Black Friday, 30% off". The spool page shows it next to the price.
+
 ## 🧵 The spool page
 
 Select a spool's color name to open its page. It has:
@@ -34,7 +44,7 @@ Select a spool's color name to open its page. It has:
   - **Weigh**: enter what the scale shows for the whole spool. Rollcall subtracts the empty-spool weight, so set that first.
   - **Set remaining**: type the remaining weight directly. Rollcall logs the difference as a correction.
 - The full weight history, with **Undo** on the latest change.
-- **This spool**: edit the status, location, weights, price, purchase date, vendor, label code, lot number, last drying date, and notes. The remaining weight only changes through the weight buttons, so the history stays complete.
+- **This spool**: edit the status, location, weights, how you got the spool, label code, lot number, last drying date, and notes. The remaining weight only changes through the weight buttons, so the history stays complete.
 - **Filament**: edit the brand, material, color, swatch, diameter, temperatures, speeds, drying settings, TD value, and product page. Spools of the same product share these details, so the page tells you when a change affects more than one spool.
 - **Tuned settings**: what you've dialed in for this filament on each printer. See below.
 - **Delete spool**: removes the spool and its history. To keep the history, set the status to `archived` instead.
