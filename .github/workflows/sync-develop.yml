@@ -1,0 +1,31 @@
+name: Sync develop
+
+# A release merges develop into main with a merge commit, which only main
+# has, so GitHub would offer to merge main back into develop. This moves
+# develop up to main afterwards: a fast-forward, so no new commit and no
+# file changes. If develop already has commits main doesn't, it can't be
+# fast-forwarded and the run fails, emailing the maintainer to merge main
+# into develop by hand. A push made with this token doesn't start other
+# workflows, so develop isn't rebuilt for the same files.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Fast-forward develop to main
+    if: github.repository == 'tronyx/rollcall'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" -q .object.sha)
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/develop" -f sha="$main" -F force=false \
+            -q '"develop is now at " + .object.sha'

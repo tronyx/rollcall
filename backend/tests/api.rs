@@ -245,3 +245,44 @@ async fn validation_errors(pool: PgPool) {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+/// The built frontend is served from STATIC_DIR, and any other path that
+/// isn't a file gets index.html with 200, so links to client routes work.
+#[sqlx::test]
+async fn serves_frontend_with_spa_fallback(pool: PgPool) {
+    let dir = std::env::temp_dir().join(format!("rollcall-static-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("_app")).unwrap();
+    std::fs::write(dir.join("index.html"), "<title>Rollcall</title>").unwrap();
+    std::fs::write(dir.join("_app/app.js"), "console.log(1)").unwrap();
+
+    let config = rollcall::config::Config {
+        database_url: String::new(),
+        bind_addr: String::new(),
+        static_dir: Some(dir.clone()),
+        cors_origin: None,
+        scraper: ScraperConfig::default(),
+        llm: None,
+    };
+    let state = AppState {
+        pool,
+        scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
+    };
+    let app = routes::router(state, &config);
+
+    for (uri, expected) in [
+        ("/", "<title>Rollcall</title>"),
+        ("/spools/some-id", "<title>Rollcall</title>"),
+        ("/_app/app.js", "console.log(1)"),
+    ] {
+        let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "{uri}");
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(String::from_utf8_lossy(&bytes), expected, "{uri}");
+    }
+    let (status, body) = call(&app, Method::GET, "/api/health", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], "ok");
+
+    std::fs::remove_dir_all(dir).ok();
+}

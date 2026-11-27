@@ -30,7 +30,7 @@ pub fn router(state: AppState, config: &Config) -> Router {
     // Serve the built SvelteKit app, falling back to index.html for client routes.
     if let Some(dir) = &config.static_dir {
         let index = dir.join("index.html");
-        app = app.fallback_service(ServeDir::new(dir).not_found_service(ServeFile::new(index)));
+        app = app.fallback_service(ServeDir::new(dir).fallback(ServeFile::new(index)));
     }
 
     let cors = match config
