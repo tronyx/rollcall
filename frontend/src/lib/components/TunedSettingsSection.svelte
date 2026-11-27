@@ -10,6 +10,16 @@
 		setFields,
 		TUNED_FIELDS
 	} from '#lib/util/tuned.ts';
+	import {
+		baseOptions,
+		buildProfile,
+		downloadProfile,
+		profileName,
+		profileValues,
+		SLICERS,
+		suggestBase,
+		type Slicer
+	} from '#lib/util/slicer.ts';
 
 	let { filament, card }: { filament: Filament; card: string } = $props();
 
@@ -108,6 +118,53 @@
 		return rank(a) - rank(b) || (a.printer_name ?? '').localeCompare(b.printer_name ?? '');
 	}
 
+	// Export as a slicer preset: one row at a time.
+	let exportingId = $state<string | null>(null);
+	let slicer = $state<Slicer>(savedSlicer());
+	let base = $state('');
+	let presetName = $state('');
+
+	function savedSlicer(): Slicer {
+		try {
+			return localStorage.getItem('rollcall.slicer') === 'bambu' ? 'bambu' : 'orca';
+		} catch {
+			return 'orca';
+		}
+	}
+
+	const printerOf = (row: TunedSettings) => printers.find((p) => p.id === row.printer_id) ?? null;
+
+	function startExport(row: TunedSettings) {
+		exportingId = row.id;
+		confirmDelete = null;
+		pickSlicer(slicer, row);
+		presetName = profileName(filament, printerOf(row));
+	}
+
+	function pickSlicer(s: Slicer, row: TunedSettings) {
+		slicer = s;
+		try {
+			localStorage.setItem('rollcall.slicer', s);
+		} catch {
+			// Remembering the choice is only a convenience.
+		}
+		base = suggestBase(s, filament.material_code, printerOf(row));
+	}
+
+	function exportRow(row: TunedSettings) {
+		const name = presetName.trim() || profileName(filament, printerOf(row));
+		const notes = [
+			`Exported from Rollcall: ${filament.brand_name} ${filament.product_name ?? filament.material_code} ${filament.color_name}.`,
+			row.notes ?? ''
+		]
+			.join('\n')
+			.trim();
+		downloadProfile(
+			buildProfile({ slicer, name, base: base.trim(), filament, tuned: row, notes }),
+			name
+		);
+	}
+
 	async function remove(row: TunedSettings) {
 		try {
 			await api.deleteTuned(row.id);
@@ -190,6 +247,82 @@
 	</form>
 {/snippet}
 
+{#snippet exporter(row: TunedSettings)}
+	{@const values = Object.values(profileValues(filament, row))}
+	<div class="mt-3 space-y-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+		<p class="text-sm font-semibold">Export as a slicer filament preset</p>
+		<div class="flex gap-1" role="radiogroup" aria-label="Slicer">
+			{#each SLICERS as s (s.id)}
+				<button
+					type="button"
+					role="radio"
+					aria-checked={slicer === s.id}
+					onclick={() => pickSlicer(s.id, row)}
+					class="rounded-full px-3 py-1 text-sm font-medium {slicer === s.id
+						? 'bg-orange-600 text-white'
+						: 'ring-1 ring-slate-300 dark:ring-slate-700'}"
+				>
+					{s.name}
+				</button>
+			{/each}
+		</div>
+		<label class="block">
+			<span class={label}>Preset name</span>
+			<input type="text" bind:value={presetName} class={input} />
+		</label>
+		<label class="block">
+			<span class={label}>Based on</span>
+			<input
+				type="text"
+				list="base-presets-{row.id}"
+				bind:value={base}
+				placeholder="None: a standalone preset"
+				class={input}
+			/>
+			<datalist id="base-presets-{row.id}">
+				{#each baseOptions(slicer, filament.material_code) as b (b)}<option value={b}
+					></option>{/each}
+			</datalist>
+			<span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+				The slicer's own preset to start from. It must exist in your slicer, or the slicer skips the
+				import. Leave it empty for a standalone preset.
+			</span>
+		</label>
+		{#if values.length}
+			<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-xs">
+				{#each values as v (v.label)}
+					<dt class="text-slate-500">{v.label}</dt>
+					<dd>
+						<span class="tabular-nums">{v.value}</span>
+						{#if v.from === 'maker'}<span class="text-slate-500">(maker)</span>{/if}
+					</dd>
+				{/each}
+			</dl>
+		{/if}
+		<p class="text-xs text-slate-500 dark:text-slate-400">
+			In {slicer === 'orca' ? 'OrcaSlicer' : 'Bambu Studio'}, choose
+			<strong>File › Import › Import Configs…</strong> and pick the downloaded file. Print speed and drying
+			have no filament setting in the slicer, so they aren't included.
+		</p>
+		<div class="flex justify-end gap-2">
+			<button
+				type="button"
+				onclick={() => (exportingId = null)}
+				class="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-700"
+			>
+				Close
+			</button>
+			<button
+				type="button"
+				onclick={() => exportRow(row)}
+				class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white"
+			>
+				Download .json
+			</button>
+		</div>
+	</div>
+{/snippet}
+
 <section class={card}>
 	<div class="mb-2 flex items-center justify-between gap-2">
 		<h2 class="font-semibold">Tuned settings</h2>
@@ -240,6 +373,9 @@
 											✓ Tested {dayOf(row.verified_at)}
 										</span>
 									{/if}
+									<button type="button" class={link} onclick={() => startExport(row)}>
+										Export
+									</button>
 									<button type="button" class={link} onclick={() => startEdit(row)}>Edit</button>
 								</div>
 							</div>
@@ -264,6 +400,9 @@
 								<p class="mt-2 text-sm whitespace-pre-line text-slate-700 dark:text-slate-300">
 									{row.notes}
 								</p>
+							{/if}
+							{#if exportingId === row.id}
+								{@render exporter(row)}
 							{/if}
 							<div class="mt-2 text-right">
 								{#if confirmDelete === row.id}

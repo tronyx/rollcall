@@ -76,6 +76,15 @@ The filament's temperatures and speeds are the maker's ranges. **Tuned settings*
 - Tick **I've printed with these settings and they work** to mark them tested. The date you first marked them is kept until you untick it.
 - The settings belong to the filament, so every spool of it shows them. Deleting a printer deletes its settings too.
 
+### 📤 Export to your slicer
+
+Select **Export** on a set of tuned settings to download it as a filament preset for **OrcaSlicer** or **Bambu Studio**. Then, in the slicer, choose **File › Import › Import Configs…** and pick the file.
+
+- **Preset name**: the filament and the printer, ending in "(Rollcall)". Change it if you like.
+- **Based on**: the slicer's own generic preset for the material, such as `Generic PLA @System` in OrcaSlicer, or `Generic PLA @BBL A1` in Bambu Studio for an A1. The preset keeps everything else from it, such as cooling and start G-code. Rollcall suggests one from the material and the printer's name or model. If your slicer doesn't have that preset, it skips the import, so pick one it has, or leave the field empty for a standalone preset.
+- The preset gets the nozzle and first-layer temperatures, the bed temperature for the textured and smooth PEI plates, max volumetric speed, flow ratio, pressure advance, retraction, fan, the maker's temperature range, the brand, type, color, diameter, and density. Empty tuned values use the maker's, as the summary shows. Print speed and drying have no filament setting in the slicers, so they aren't exported.
+- Rollcall remembers which slicer you picked last.
+
 ## 💧 Humidity
 
 If you keep a hygrometer in a dry box or dryer, log its readings on the spool page under **Humidity**: select **+ Add reading**, and enter the humidity, and optionally the temperature and a note. The time starts out as now.
