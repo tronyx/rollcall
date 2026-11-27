@@ -19,6 +19,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 ### Security
 
 - The Docker image is now built on Debian 13 (trixie) instead of Debian 12, which clears the 8 PAM vulnerabilities (CVE-2025-6020, CVE-2024-22365) that Trivy reported in the Debian 12 base.
+- The Docker image installs Debian's latest security updates when it's built, so fixes released after the base image (such as those for zstd and shadow) ship in the next build.
 
 ### Project
 

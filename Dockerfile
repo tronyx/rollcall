@@ -19,7 +19,10 @@ RUN cargo build --release --locked && cp target/release/rollcall /usr/local/bin/
 
 # ---- Runtime ----
 FROM debian:trixie-slim
+# The upgrade picks up Debian security fixes released since the base image was
+# published, so each weekly rebuild ships them.
 RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 rollcall
