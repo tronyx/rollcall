@@ -84,6 +84,33 @@ Select **Export** on a set of tuned settings to download it as a filament preset
 - **Based on**: the slicer's own generic preset for the material, such as `Generic PLA @System` in OrcaSlicer, or `Generic PLA @BBL A1` in Bambu Studio for an A1. The preset keeps everything else from it, such as cooling and start G-code. Rollcall suggests one from the material and the printer's name or model. If your slicer doesn't have that preset, it skips the import, so pick one it has, or leave the field empty for a standalone preset.
 - The preset gets the nozzle and first-layer temperatures, the bed temperature for the textured and smooth PEI plates, max volumetric speed, flow ratio, pressure advance, retraction, fan, the maker's temperature range, the brand, type, color, diameter, and density. Empty tuned values use the maker's, as the summary shows. Print speed and drying have no filament setting in the slicers, so they aren't exported.
 - Rollcall remembers which slicer you picked last.
+- Rollcall also remembers the preset name, so [prints](#-prints-from-your-slicer) made with it are taken from this filament's spool.
+
+## 🧾 Prints from your slicer
+
+Rollcall can take the filament each print uses off the right spool by itself. OrcaSlicer and Bambu Studio run Rollcall's script each time they export or send a print. The script reads the grams of each filament from the G-code and sends them to Rollcall. Select **🧾** (**Prints** on wider screens) on the dashboard to see them.
+
+### Set it up once
+
+1. On the **Prints** page, open **Log prints from your slicer automatically** and download `rollcall-print.py`. It needs Python 3 and nothing else.
+2. In the slicer's process settings, under **Others › Post-processing Scripts**, add the line the page shows, with the script's path. For example:
+
+   ```text
+   "/usr/bin/python3" "/home/me/rollcall-print.py" --url http://rollcall.local:8080
+   ```
+
+   On Windows, use the full path to `python.exe`. Save the process preset so every print uses it.
+3. Tell Rollcall which filament each slicer preset is. Either [export the preset](#-export-to-your-slicer) from Rollcall and use it in the slicer, or pick the spool on the **Prints** page the first time a preset shows up. Rollcall remembers it after that.
+
+The script sends only the slicer's comment lines, a few kilobytes, and never changes the G-code. If Rollcall can't be reached, the script says so and lets the slicer finish the export.
+
+### What Rollcall does with a print
+
+- For each filament the print uses, Rollcall looks up the slicer preset. If its filament has exactly one open spool (active or drying), or no open spool and exactly one sealed one, the grams are taken from that spool, as a **print** in its weight history.
+- Otherwise the print waits under **Needs a spool**, and the dashboard says how many prints are waiting. Pick the spool, or **Skip** a filament you didn't use. The list puts the likeliest spools first: the preset's filament, then the same material, then the closest color.
+- **Undo** puts one filament back on its spool. **Didn't print it…** deletes the print and puts back everything it took. The slicer runs the script when you export or send, so use this for a print you didn't make.
+- The same upload twice within 10 minutes counts once.
+- **+ Add from G-code** adds a G-code file by hand, for a print sliced on another computer.
 
 ## 💧 Humidity
 
@@ -152,5 +179,8 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET`, `POST /api/equipment`; `GET`, `PUT`, `DELETE /api/equipment/{id}` | Equipment and accessories. Filters: `category`, `brand_id`, `printer` (an id or `none`), `q`, `include_retired` |
 | `GET /api/photos?spool_id=` (or `filament_id`, `equipment_id`); `POST /api/photos` | List photos, or upload one as `multipart/form-data` with an owner id, a `file`, and an optional `caption` |
 | `GET`, `PATCH`, `DELETE /api/photos/{id}`; `GET /api/photos/{id}/file` | A photo's details, its caption, deleting it, and the image itself |
+| `GET /api/prints?pending=true`; `POST /api/prints?name=<file name>` | Prints, or log one: send G-code (or just its comment lines) as the body |
+| `GET`, `DELETE /api/prints/{id}`; `PUT /api/prints/{id}/slots/{slot}`; `POST /api/prints/{id}/slots/{slot}/undo` | A print; delete it and put its filament back; take a filament from a spool (`spool_id`, `remember`) or skip it (`skip: true`); undo one |
+| `GET`, `PUT /api/slicer-profiles`; `DELETE /api/slicer-profiles/{name}` | Which Rollcall filament each slicer preset is |
 | `GET /api/stats` | Dashboard numbers |
 | `GET /api/health` | Health check |

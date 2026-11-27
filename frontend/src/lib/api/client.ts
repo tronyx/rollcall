@@ -13,6 +13,9 @@ import type {
 	NewLocation,
 	NewPrinter,
 	Photo,
+	Print,
+	AssignSlot,
+	SlicerProfile,
 	PhotoOwner,
 	ParseResult,
 	Printer,
@@ -41,8 +44,8 @@ export class ApiError extends Error {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	let res: Response;
 	try {
-		// FormData sets its own multipart content type and boundary.
-		const form = body instanceof FormData;
+		// FormData and Blob bodies carry their own content type.
+		const form = body instanceof FormData || body instanceof Blob;
 		res = await fetch(`/api${path}`, {
 			method,
 			headers: body === undefined || form ? undefined : { 'content-type': 'application/json' },
@@ -120,6 +123,24 @@ export const api = {
 	setPhotoCaption: (id: string, caption: string | null) =>
 		request<Photo>('PATCH', `/photos/${id}`, { caption }),
 	deletePhoto: (id: string) => request<void>('DELETE', `/photos/${id}`),
+	prints: (filter: { pending?: boolean; limit?: number } = {}) =>
+		request<Print[]>('GET', `/prints${toQuery(filter)}`),
+	/** G-code, or just its comment lines (see `gcodeSummary`). */
+	logPrint: (name: string, gcode: string) =>
+		request<Print>(
+			'POST',
+			`/prints${toQuery({ name })}`,
+			new Blob([gcode], { type: 'text/plain' })
+		),
+	assignPrintSlot: (id: string, slot: number, body: AssignSlot) =>
+		request<Print>('PUT', `/prints/${id}/slots/${slot}`, body),
+	undoPrintSlot: (id: string, slot: number) =>
+		request<Print>('POST', `/prints/${id}/slots/${slot}/undo`),
+	deletePrint: (id: string) => request<void>('DELETE', `/prints/${id}`),
+	slicerProfiles: (filamentId?: string) =>
+		request<SlicerProfile[]>('GET', `/slicer-profiles${toQuery({ filament_id: filamentId })}`),
+	saveSlicerProfile: (body: SlicerProfile) =>
+		request<SlicerProfile>('PUT', '/slicer-profiles', body),
 	tuned: (filamentId: string) => request<TunedSettings[]>('GET', `/filaments/${filamentId}/tuned`),
 	saveTuned: (filamentId: string, body: SaveTunedSettings) =>
 		request<TunedSettings>('PUT', `/filaments/${filamentId}/tuned`, body),

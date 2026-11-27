@@ -13,6 +13,7 @@ mod filaments;
 mod humidity;
 mod lookups;
 mod photos;
+mod prints;
 mod settings;
 mod spools;
 mod stats;
@@ -31,6 +32,7 @@ pub fn api(state: AppState) -> Router {
         .merge(humidity::routes())
         .merge(equipment::routes())
         .merge(photos::routes())
+        .merge(prints::routes())
         .with_state(state)
 }
 

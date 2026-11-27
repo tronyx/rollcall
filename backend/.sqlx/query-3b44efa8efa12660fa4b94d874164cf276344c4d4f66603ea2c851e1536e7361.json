@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE print_slots SET status = 'skipped' WHERE print_id = $1 AND slot = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3b44efa8efa12660fa4b94d874164cf276344c4d4f66603ea2c851e1536e7361"
+}

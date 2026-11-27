@@ -62,3 +62,12 @@ pub enum EquipmentCategory {
     Equipment,
     Accessory,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "print_slot_status", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum PrintSlotStatus {
+    Pending,
+    Logged,
+    Skipped,
+}

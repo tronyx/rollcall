@@ -1,0 +1,129 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT ps.print_id, ps.slot, ps.grams, ps.profile_name, ps.filament_type, ps.color_hex,\n               ps.status AS \"status: PrintSlotStatus\", ps.spool_id, ps.weight_event_id,\n               sp.filament_id AS \"profile_filament_id?\",\n               s.label_code, b.name AS \"brand_name?\", m.code AS \"material_code?\",\n               f.product_name, f.color_name AS \"color_name?\", f.color_hex AS spool_color_hex,\n               s.remaining_weight_g AS \"remaining_weight_g?\"\n        FROM print_slots ps\n        LEFT JOIN slicer_profiles sp ON sp.name = ps.profile_name\n        LEFT JOIN spools s    ON s.id = ps.spool_id\n        LEFT JOIN filaments f ON f.id = s.filament_id\n        LEFT JOIN brands b    ON b.id = f.brand_id\n        LEFT JOIN materials m ON m.id = f.material_id\n        WHERE ps.print_id = ANY($1)\n        ORDER BY ps.slot\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "print_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "slot",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "grams",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "profile_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "filament_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "color_hex",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "status: PrintSlotStatus",
+        "type_info": {
+          "Custom": {
+            "name": "print_slot_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "logged",
+                "skipped"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "spool_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "weight_event_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "profile_filament_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "label_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "brand_name?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "material_code?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "product_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "color_name?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "spool_color_hex",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "remaining_weight_g?",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "b832716a8396a2fbb24208cb93cec5cea51b2ef33598ee4da53bee433f59c179"
+}

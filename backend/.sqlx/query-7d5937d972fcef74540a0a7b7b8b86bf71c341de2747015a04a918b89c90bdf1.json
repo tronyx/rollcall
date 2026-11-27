@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT ps.grams, ps.status AS \"status: PrintSlotStatus\", p.name AS print_name,\n               ps.weight_event_id\n        FROM print_slots ps JOIN prints p ON p.id = ps.print_id\n        WHERE ps.print_id = $1 AND ps.slot = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "grams",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 1,
+        "name": "status: PrintSlotStatus",
+        "type_info": {
+          "Custom": {
+            "name": "print_slot_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "logged",
+                "skipped"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "print_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "weight_event_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "7d5937d972fcef74540a0a7b7b8b86bf71c341de2747015a04a918b89c90bdf1"
+}

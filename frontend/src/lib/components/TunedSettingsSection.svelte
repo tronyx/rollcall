@@ -163,6 +163,8 @@
 			buildProfile({ slicer, name, base: base.trim(), filament, tuned: row, notes }),
 			name
 		);
+		// So prints with this preset are taken from this filament's spool.
+		api.saveSlicerProfile({ name, filament_id: filament.id }).catch(() => {});
 	}
 
 	async function remove(row: TunedSettings) {

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE print_slots SET status = 'pending', spool_id = NULL, weight_event_id = NULL\n        WHERE print_id = $1 AND slot = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "91bef987246e0ce7e73b58ac0fc0bfc3547dccc61db39c86fc8a1d055a46639d"
+}
