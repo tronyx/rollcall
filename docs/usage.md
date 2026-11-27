@@ -46,6 +46,7 @@ Select a spool's color name to open its page. It has:
 - The full weight history, with **Undo** on the latest change.
 - **This spool**: edit the status, location, weights, how you got the spool, label code, lot number, last drying date, and notes. The remaining weight only changes through the weight buttons, so the history stays complete.
 - **Filament**: edit the brand, material, color, swatch, diameter, temperatures, speeds, drying settings, TD value, and product page. Spools of the same product share these details, so the page tells you when a change affects more than one spool.
+- **Humidity**: hygrometer readings for this spool. See below.
 - **Tuned settings**: what you've dialed in for this filament on each printer. See below.
 - **Delete spool**: removes the spool and its history. To keep the history, set the status to `archived` instead.
 
@@ -74,6 +75,12 @@ The filament's temperatures and speeds are the maker's ranges. **Tuned settings*
 - Fill in only what you changed. Empty fields fall back to the filament's values, which the form shows in grey and the summary shows as "maker".
 - Tick **I've printed with these settings and they work** to mark them tested. The date you first marked them is kept until you untick it.
 - The settings belong to the filament, so every spool of it shows them. Deleting a printer deletes its settings too.
+
+## 💧 Humidity
+
+If you keep a hygrometer in a dry box or dryer, log its readings on the spool page under **Humidity**: select **+ Add reading**, and enter the humidity, and optionally the temperature and a note. The time starts out as now.
+
+The latest reading shows a tag: **Dry** under 20%, **OK** up to 40%, and **Humid: dry it soon** above that. A line shows the trend of the last 30 readings.
 
 ## 📍 Locations and status
 
@@ -104,6 +111,7 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET /api/filaments`, `GET /api/filaments/{id}` | Filament products |
 | `PUT /api/filaments/{id}` | Change a filament's details (for every spool that uses it) |
 | `GET`, `PUT /api/filaments/{id}/tuned`; `DELETE /api/tuned/{id}` | Tuned settings for a filament, per printer or for any printer |
+| `GET`, `POST /api/spools/{id}/humidity`; `DELETE /api/humidity/{id}` | A spool's humidity readings |
 | `POST /api/filaments/parse-url` | Read a product page and return a draft |
 | `GET /api/brands`, `GET /api/materials` | Lookup lists |
 | `GET`, `POST /api/locations`; `PUT`, `DELETE /api/locations/{id}` | Storage locations |

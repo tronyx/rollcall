@@ -646,3 +646,88 @@ async fn acquisition_and_discount(pool: PgPool) {
     assert_eq!(g["discounted"], false);
     assert!(g["discount_note"].is_null());
 }
+
+#[sqlx::test]
+async fn humidity_readings(pool: PgPool) {
+    let app = app(pool);
+    let (_, spool) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#FF0000", 1000.0)),
+    )
+    .await;
+    let uri = format!("/spools/{}/humidity", spool["id"].as_str().unwrap());
+
+    let (status, list) = call(&app, Method::GET, &uri, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list, json!([]));
+
+    let (status, older) = call(
+        &app,
+        Method::POST,
+        &uri,
+        Some(
+            json!({ "measured_at": "2026-11-20T12:00:00Z", "humidity_pct": 42.5,
+                     "temperature_c": 21, "note": " in the dry box " }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{older}");
+    assert_eq!(older["humidity_pct"], 42.5);
+    assert_eq!(older["note"], "in the dry box");
+    // No date means now.
+    let (_, newer) = call(
+        &app,
+        Method::POST,
+        &uri,
+        Some(json!({ "humidity_pct": 18 })),
+    )
+    .await;
+    assert!(newer["temperature_c"].is_null());
+
+    let (_, list) = call(&app, Method::GET, &uri, None).await;
+    let ids: Vec<_> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["id"].clone())
+        .collect();
+    assert_eq!(ids, vec![newer["id"].clone(), older["id"].clone()]);
+
+    let (status, _) = call(
+        &app,
+        Method::POST,
+        &uri,
+        Some(json!({ "humidity_pct": 120 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let missing = "/spools/0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f/humidity";
+    let (status, _) = call(&app, Method::GET, missing, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = call(
+        &app,
+        Method::POST,
+        missing,
+        Some(json!({ "humidity_pct": 30 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let del = format!("/humidity/{}", older["id"].as_str().unwrap());
+    let (status, _) = call(&app, Method::DELETE, &del, None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = call(&app, Method::DELETE, &del, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Deleting the spool deletes its readings.
+    let (status, _) = call(
+        &app,
+        Method::DELETE,
+        &format!("/spools/{}", spool["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

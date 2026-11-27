@@ -312,3 +312,19 @@ export interface ParseResult {
 	missing: (keyof ParseDraft)[];
 	warnings: string[];
 }
+
+export interface HumidityReading {
+	id: string;
+	spool_id: string;
+	measured_at: string;
+	humidity_pct: number;
+	temperature_c: number | null;
+	note: string | null;
+}
+
+export interface NewHumidityReading {
+	measured_at?: string | null;
+	humidity_pct: number;
+	temperature_c?: number | null;
+	note?: string | null;
+}

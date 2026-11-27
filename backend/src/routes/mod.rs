@@ -9,6 +9,7 @@ use tower_http::{
 };
 
 mod filaments;
+mod humidity;
 mod lookups;
 mod settings;
 mod spools;
@@ -25,6 +26,7 @@ pub fn api(state: AppState) -> Router {
         .merge(stats::routes())
         .merge(settings::routes())
         .merge(tuned::routes())
+        .merge(humidity::routes())
         .with_state(state)
 }
 

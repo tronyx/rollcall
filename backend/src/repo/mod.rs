@@ -2,6 +2,7 @@
 //! run `cargo sqlx prepare` after changing one so CI can build offline.
 
 pub mod filaments;
+pub mod humidity;
 pub mod lookups;
 pub mod settings;
 pub mod spools;

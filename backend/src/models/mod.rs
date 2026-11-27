@@ -5,6 +5,7 @@
 
 mod enums;
 mod filament;
+mod humidity;
 mod lookups;
 mod spool;
 mod stats;
@@ -12,6 +13,7 @@ mod tuned;
 
 pub use enums::*;
 pub use filament::*;
+pub use humidity::*;
 pub use lookups::*;
 pub use spool::*;
 pub use stats::*;
