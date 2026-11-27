@@ -28,3 +28,47 @@ export function levelColor(pct: number, lowStock: boolean): string {
 	if (pct < 50) return 'bg-amber-500';
 	return 'bg-emerald-500';
 }
+
+/** "2026-11-27T17:55:00Z" → "Nov 27, 2026, 12:55 PM" in the viewer's time zone. */
+export function dateTime(iso: string | null): string {
+	if (!iso) return '';
+	return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/** "2026-11-27" (a date with no time) → "Nov 27, 2026", without a time-zone shift. */
+export function dateOnly(ymd: string | null): string {
+	if (!ymd) return '';
+	const [y, m, d] = ymd.split('-').map(Number);
+	return new Date(y, m - 1, d).toLocaleDateString('en-US', { dateStyle: 'medium' });
+}
+
+const eventLabels: Record<string, string> = {
+	initial: 'Added',
+	print: 'Print',
+	quick_adjust: 'Quick adjust',
+	weigh_in: 'Weigh-in',
+	correction: 'Correction'
+};
+
+export function eventLabel(kind: string): string {
+	return eventLabels[kind] ?? kind;
+}
+
+/** −12.5 → "−12.5 g", 40 → "+40 g", 0 → "0 g". */
+export function signedGrams(g: number): string {
+	if (g === 0) return grams(0);
+	return `${g > 0 ? '+' : '−'}${grams(Math.abs(g))}`;
+}
+
+/** An ISO timestamp → the value a `datetime-local` input expects, in local time. */
+export function toLocalInput(iso: string | null): string {
+	if (!iso) return '';
+	const d = new Date(iso);
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** A `datetime-local` value (local time) → ISO timestamp, or null when empty. */
+export function fromLocalInput(value: string): string | null {
+	return value ? new Date(value).toISOString() : null;
+}

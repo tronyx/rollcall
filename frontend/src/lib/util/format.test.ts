@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { contrastText, grams, range } from './format';
+import {
+	contrastText,
+	dateOnly,
+	eventLabel,
+	fromLocalInput,
+	grams,
+	range,
+	signedGrams,
+	toLocalInput
+} from './format';
 import { toQuery } from '../api/client';
 
 describe('format', () => {
@@ -26,5 +35,28 @@ describe('format', () => {
 			'?q=pla&include_empty=true'
 		);
 		expect(toQuery({})).toBe('');
+	});
+
+	it('formats signed grams for the weight history', () => {
+		expect(signedGrams(-12.5)).toBe('−12.5 g');
+		expect(signedGrams(40)).toBe('+40 g');
+		expect(signedGrams(0)).toBe('0 g');
+	});
+
+	it('labels weight events', () => {
+		expect(eventLabel('weigh_in')).toBe('Weigh-in');
+		expect(eventLabel('something_new')).toBe('something_new');
+	});
+
+	it('keeps plain dates on the same day', () => {
+		expect(dateOnly('2026-03-01')).toBe('Mar 1, 2026');
+		expect(dateOnly(null)).toBe('');
+	});
+
+	it('round-trips datetime-local values', () => {
+		const iso = fromLocalInput('2026-11-27T12:30');
+		expect(iso).not.toBeNull();
+		expect(toLocalInput(iso)).toBe('2026-11-27T12:30');
+		expect(fromLocalInput('')).toBeNull();
 	});
 });

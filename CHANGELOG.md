@@ -8,8 +8,9 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- A page for each spool, opened from its card. It shows the full weight history and can weigh the spool, set the remaining weight, edit the spool and its filament, and delete the spool. `PUT /api/filaments/{id}` changes a filament's details. See [Usage](docs/usage.md#-the-spool-page).
 - The first version of Rollcall: a spool inventory with brands, materials, colors, weights, prices, locations, and statuses, backed by PostgreSQL 18.
-- Quick weight updates (`−10g`, `−50g`, **Log print**) with undo, scale weigh-ins through the API, and a history of every change.
+- Quick weight updates (`−10g`, `−50g`, **Log print**) with undo, scale weigh-ins, and a history of every change.
 - The link parser, which fills in the add-spool form from Shopify stores, schema.org data, Amazon pages, spec tables, page text, the link itself, and an optional LLM step.
 - A dashboard with the spool count, kilograms left, low-stock alerts, and search and filters.
 - A Docker image for `amd64` and `arm64`, published to `ghcr.io/tronyx/rollcall` as `develop`.

@@ -24,7 +24,21 @@ Each spool card has these buttons:
 | **Log print** | Subtract the grams that a print used |
 | **Undo** | Reverse the last change |
 
-Every change is written to the spool's history. A scale weigh-in (the gross weight, from which Rollcall subtracts the empty-spool weight) is available through the API for now: `POST /api/spools/{id}/weight`.
+Every change is written to the spool's history.
+
+## 🧵 The spool page
+
+Select a spool's color name to open its page. It has:
+
+- The same weight buttons, plus **Weigh** and **Set remaining**:
+  - **Weigh**: enter what the scale shows for the whole spool. Rollcall subtracts the empty-spool weight, so set that first.
+  - **Set remaining**: type the remaining weight directly. Rollcall logs the difference as a correction.
+- The full weight history, with **Undo** on the latest change.
+- **This spool**: edit the status, location, weights, price, purchase date, vendor, label code, lot number, last drying date, and notes. The remaining weight only changes through the weight buttons, so the history stays complete.
+- **Filament**: edit the brand, material, color, swatch, diameter, temperatures, speeds, drying settings, TD value, and product page. Spools of the same product share these details, so the page tells you when a change affects more than one spool.
+- **Delete spool**: removes the spool and its history. To keep the history, set the status to `archived` instead.
+
+The page has its own address, `/spools/<id>`, so you can bookmark it.
 
 ## 📍 Locations and status
 
@@ -45,6 +59,7 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `POST /api/spools/{id}/weight` | Adjust the weight, log a print, or record a weigh-in |
 | `GET /api/spools/{id}/weight-events` | A spool's weight history |
 | `GET /api/filaments`, `GET /api/filaments/{id}` | Filament products |
+| `PUT /api/filaments/{id}` | Change a filament's details (for every spool that uses it) |
 | `POST /api/filaments/parse-url` | Read a product page and return a draft |
 | `GET /api/brands`, `GET /api/materials`, `GET /api/locations` | Lookup lists |
 | `GET /api/stats` | Dashboard numbers |

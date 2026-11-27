@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE filaments SET\n            brand_id = $2, material_id = $3, product_name = $4, color_name = $5,\n            color_hex = $6, color_hex_secondary = $7, diameter_mm = $8,\n            nominal_weight_g = $9, typical_tare_g = $10,\n            nozzle_temp_min_c = $11, nozzle_temp_max_c = $12,\n            bed_temp_min_c = $13, bed_temp_max_c = $14,\n            print_speed_min_mm_s = $15, print_speed_max_mm_s = $16,\n            drying_temp_c = $17, drying_time_min = $18,\n            density_g_cm3 = $19, td_value = $20,\n            source_url = $21, image_url = $22\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Bpchar",
+        "Bpchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int4",
+        "Numeric",
+        "Numeric",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f9bc09e7fb5ec2affd5e4df7eefa449270f2b7db10c8cd462407a036344a8d6f"
+}

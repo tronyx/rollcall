@@ -158,3 +158,64 @@ pub async fn find_or_create(
     .await?;
     Ok(id)
 }
+
+/// Replaces a filament's details. Every spool of this filament sees the
+/// change. The brand is created if it's new; the material must exist.
+pub async fn update_filament(
+    pool: &PgPool,
+    id: Uuid,
+    mut input: NewFilament,
+) -> AppResult<Filament> {
+    input.normalize();
+    if input.color_name.is_empty() {
+        return Err(AppError::BadRequest("color_name is required".into()));
+    }
+    let mut tx = pool.begin().await?;
+    let brand_id = upsert_brand(&mut tx, &input.brand_name).await?;
+    let material_id = material_id_by_code(&mut tx, &input.material_code).await?;
+    let s = &input.specs;
+    let res = sqlx::query!(
+        r#"
+        UPDATE filaments SET
+            brand_id = $2, material_id = $3, product_name = $4, color_name = $5,
+            color_hex = $6, color_hex_secondary = $7, diameter_mm = $8,
+            nominal_weight_g = $9, typical_tare_g = $10,
+            nozzle_temp_min_c = $11, nozzle_temp_max_c = $12,
+            bed_temp_min_c = $13, bed_temp_max_c = $14,
+            print_speed_min_mm_s = $15, print_speed_max_mm_s = $16,
+            drying_temp_c = $17, drying_time_min = $18,
+            density_g_cm3 = $19, td_value = $20,
+            source_url = $21, image_url = $22
+        WHERE id = $1
+        "#,
+        id,
+        brand_id,
+        material_id,
+        input.product_name,
+        input.color_name,
+        input.color_hex,
+        input.color_hex_secondary,
+        input.diameter_mm,
+        input.nominal_weight_g,
+        input.typical_tare_g,
+        s.nozzle_temp_min_c,
+        s.nozzle_temp_max_c,
+        s.bed_temp_min_c,
+        s.bed_temp_max_c,
+        s.print_speed_min_mm_s,
+        s.print_speed_max_mm_s,
+        s.drying_temp_c,
+        s.drying_time_min,
+        s.density_g_cm3,
+        s.td_value,
+        input.source_url,
+        input.image_url,
+    )
+    .execute(&mut *tx)
+    .await?;
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound("filament"));
+    }
+    tx.commit().await?;
+    get_filament(pool, id).await
+}

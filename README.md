@@ -14,7 +14,8 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 ## ✨ Features
 
 - 📦 **Inventory**: brand, material, color swatch, weights, price, purchase date, storage location (dry box, AMS slot), and status (sealed, active, drying, empty, archived).
-- ⚖️ **Quick weight updates**: `−10g`, `−50g`, and **Log print** buttons on every spool, with undo. Every change is logged.
+- ⚖️ **Quick weight updates**: `−10g`, `−50g`, and **Log print** buttons on every spool, with undo, and scale weigh-ins on the spool page. Every change is logged.
+- 🧵 **Spool page**: the full weight history, and editing of the spool and its filament.
 - 🔗 **Link parser**: reads Shopify stores, schema.org data, Amazon pages, spec tables, and the page text. A blocked page still gives you a partly filled form. An optional LLM step fills the remaining gaps. See [Link parser](docs/link-parser.md).
 - 🖨️ **Print profiles**: the manufacturer's temperature ranges stored with each filament, and the HueForge TD value.
 - 📊 **Dashboard**: spool count, kilograms left, low-stock alerts (under 200 g by default), and search and filters by material, brand, color, and location.
