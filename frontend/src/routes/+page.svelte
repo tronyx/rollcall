@@ -72,22 +72,30 @@
 	}
 </script>
 
-<header class="mb-4 flex items-center justify-between">
+<header class="mb-4 flex items-center justify-between gap-2">
 	<h1 class="flex items-center gap-2 text-xl font-bold tracking-tight">
 		<img src="/favicon.svg" alt="" class="size-7" /> Rollcall
 	</h1>
-	<div class="flex items-center gap-3">
+	<nav class="flex items-center gap-2 sm:gap-3" aria-label="Pages">
+		<a
+			href={resolve('/equipment')}
+			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+		>
+			<span aria-hidden="true">🧰</span><span class="sr-only sm:not-sr-only sm:ml-1">
+				Equipment
+			</span>
+		</a>
 		<a
 			href={resolve('/labels')}
-			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
-			🏷️ Labels
+			<span aria-hidden="true">🏷️</span><span class="sr-only sm:not-sr-only sm:ml-1">Labels</span>
 		</a>
 		<a
 			href={resolve('/settings')}
-			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+			class="flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 		>
-			⚙️ Settings
+			<span aria-hidden="true">⚙️</span><span class="sr-only sm:not-sr-only sm:ml-1">Settings</span>
 		</a>
 		<button
 			type="button"
@@ -96,7 +104,7 @@
 		>
 			+ Add spool
 		</button>
-	</div>
+	</nav>
 </header>
 
 <div class="space-y-4">

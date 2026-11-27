@@ -2,6 +2,8 @@ import type {
 	AppSettings,
 	Brand,
 	CreateSpool,
+	Equipment,
+	EquipmentFilter,
 	Filament,
 	HumidityReading,
 	InventoryStats,
@@ -12,6 +14,7 @@ import type {
 	NewPrinter,
 	ParseResult,
 	Printer,
+	SaveEquipment,
 	SaveTunedSettings,
 	Spool,
 	SpoolFilter,
@@ -92,6 +95,12 @@ export const api = {
 	createPrinter: (body: NewPrinter) => request<Printer>('POST', '/printers', body),
 	updatePrinter: (id: string, body: NewPrinter) => request<Printer>('PUT', `/printers/${id}`, body),
 	deletePrinter: (id: string) => request<void>('DELETE', `/printers/${id}`),
+	equipment: (filter: EquipmentFilter = {}) =>
+		request<Equipment[]>('GET', `/equipment${toQuery(filter)}`),
+	createEquipment: (body: SaveEquipment) => request<Equipment>('POST', '/equipment', body),
+	updateEquipment: (id: string, body: SaveEquipment) =>
+		request<Equipment>('PUT', `/equipment/${id}`, body),
+	deleteEquipment: (id: string) => request<void>('DELETE', `/equipment/${id}`),
 	humidity: (spoolId: string) => request<HumidityReading[]>('GET', `/spools/${spoolId}/humidity`),
 	addHumidity: (spoolId: string, body: NewHumidityReading) =>
 		request<HumidityReading>('POST', `/spools/${spoolId}/humidity`, body),

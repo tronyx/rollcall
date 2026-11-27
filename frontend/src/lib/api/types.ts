@@ -328,3 +328,58 @@ export interface NewHumidityReading {
 	temperature_c?: number | null;
 	note?: string | null;
 }
+
+export type EquipmentCategory = 'equipment' | 'accessory';
+
+/** A piece of equipment (nozzle, AMS, dryer) or an accessory (build plate, tool). */
+export interface Equipment {
+	id: string;
+	category: EquipmentCategory;
+	kind: string | null;
+	name: string;
+	brand_id: string | null;
+	brand_name: string | null;
+	printer_id: string | null;
+	printer_name: string | null;
+	model: string | null;
+	quantity: number;
+	retired: boolean;
+	acquisition: AcquisitionKind;
+	acquired_on: string | null;
+	acquired_from: string | null;
+	price: number | null;
+	currency: string;
+	discounted: boolean;
+	discount_note: string | null;
+	notes: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SaveEquipment {
+	category: EquipmentCategory;
+	kind: string | null;
+	name: string;
+	brand_name: string | null;
+	printer_id: string | null;
+	model: string | null;
+	quantity: number;
+	retired: boolean;
+	acquisition: AcquisitionKind;
+	acquired_on: string | null;
+	acquired_from: string | null;
+	price: number | null;
+	currency: string | null;
+	discounted: boolean;
+	discount_note: string | null;
+	notes: string | null;
+}
+
+export interface EquipmentFilter {
+	category?: EquipmentCategory | '';
+	brand_id?: string;
+	/** A printer id, or "none" for items not tied to a printer. */
+	printer?: string;
+	q?: string;
+	include_retired?: boolean;
+}

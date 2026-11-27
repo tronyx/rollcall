@@ -4,6 +4,7 @@
 //! numbers so the frontend can do arithmetic directly.
 
 mod enums;
+mod equipment;
 mod filament;
 mod humidity;
 mod lookups;
@@ -12,6 +13,7 @@ mod stats;
 mod tuned;
 
 pub use enums::*;
+pub use equipment::*;
 pub use filament::*;
 pub use humidity::*;
 pub use lookups::*;

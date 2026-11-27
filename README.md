@@ -18,6 +18,7 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 - 🏷️ **QR labels**: print a label for one spool or a whole sheet, for label printers or paper. Scanning one opens that spool's page.
 - 🎯 **Tuned settings**: save the temperatures, flow ratio, pressure advance, retraction and more that work for each filament on each printer, next to the maker's values.
 - 💧 **Humidity log**: record hygrometer readings for each spool, with a dry, OK, or humid tag and a trend line.
+- 🧰 **Equipment and accessories**: nozzles, AMS units, dryers, build plates, tools, and spares, with brand, printer, quantity, and how you got them, filtered by brand and printer.
 - 🧵 **Spool page**: the full weight history, and editing of the spool and its filament.
 - ⚙️ **Settings**: your locations, your printers, the low-stock threshold, and the default currency.
 - 🔗 **Link parser**: reads Shopify stores, schema.org data, Amazon pages, spec tables, and the page text. A blocked page still gives you a partly filled form. An optional LLM step fills the remaining gaps. See [Link parser](docs/link-parser.md).

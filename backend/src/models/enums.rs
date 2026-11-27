@@ -54,3 +54,11 @@ pub enum AcquisitionKind {
     Gift,
     Other,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "equipment_category", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum EquipmentCategory {
+    Equipment,
+    Accessory,
+}

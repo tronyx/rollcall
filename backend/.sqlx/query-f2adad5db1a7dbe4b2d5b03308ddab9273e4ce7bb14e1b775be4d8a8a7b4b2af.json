@@ -1,0 +1,179 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT e.id, e.category AS \"category: EquipmentCategory\", e.kind, e.name,\n               e.brand_id, b.name AS \"brand_name?\", e.printer_id, p.name AS \"printer_name?\",\n               e.model, e.quantity, e.retired,\n               e.acquisition AS \"acquisition: AcquisitionKind\", e.acquired_on, e.acquired_from,\n               e.price, e.currency, e.discounted, e.discount_note, e.notes,\n               e.created_at, e.updated_at\n        FROM equipment e\n        LEFT JOIN brands b   ON b.id = e.brand_id\n        LEFT JOIN printers p ON p.id = e.printer_id\n        WHERE ($1::uuid IS NULL OR e.id = $1)\n          AND ($2::equipment_category IS NULL OR e.category = $2)\n          AND ($3::uuid IS NULL OR e.brand_id = $3)\n          AND ($4::uuid IS NULL OR e.printer_id = $4)\n          AND (NOT $5 OR e.printer_id IS NULL)\n          AND ($6 OR $1::uuid IS NOT NULL OR NOT e.retired)\n          AND ($7::text IS NULL\n               OR e.name ILIKE $7 OR coalesce(e.kind, '') ILIKE $7\n               OR coalesce(e.model, '') ILIKE $7 OR coalesce(b.name, '') ILIKE $7\n               OR coalesce(e.notes, '') ILIKE $7)\n        ORDER BY e.retired, e.category, lower(coalesce(e.kind, '')), lower(e.name), e.created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category: EquipmentCategory",
+        "type_info": {
+          "Custom": {
+            "name": "equipment_category",
+            "kind": {
+              "Enum": [
+                "equipment",
+                "accessory"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "brand_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "brand_name?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "printer_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "printer_name?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "retired",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
+        "name": "acquisition: AcquisitionKind",
+        "type_info": {
+          "Custom": {
+            "name": "acquisition_kind",
+            "kind": {
+              "Enum": [
+                "bought",
+                "gift",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "acquired_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 13,
+        "name": "acquired_from",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "price",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 15,
+        "name": "currency",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "discounted",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 17,
+        "name": "discount_note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "equipment_category",
+            "kind": {
+              "Enum": [
+                "equipment",
+                "accessory"
+              ]
+            }
+          }
+        },
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "f2adad5db1a7dbe4b2d5b03308ddab9273e4ce7bb14e1b775be4d8a8a7b4b2af"
+}
