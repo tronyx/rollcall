@@ -86,6 +86,19 @@ The latest reading shows a tag: **Dry** under 20%, **OK** up to 40%, and **Humid
 
 A spool can have a storage location, such as a dry box or an AMS slot, and a status: `sealed`, `active`, `drying`, `empty`, or `archived`.
 
+## 🧰 Equipment and accessories
+
+Select **🧰** (**Equipment** on wider screens) on the dashboard to keep track of everything besides filament:
+
+- **Equipment**: nozzles, hotends, AMS units, dryers, enclosures, cameras, and upgrades.
+- **Accessories**: build plates, tools, spare parts, glue, and other supplies.
+
+Each item has a kind, a name, a brand, a model or part number, the printer it belongs to (or **Any printer**), a quantity, and how you got it, the same way as a spool. Brands are shared with filament, so typing "bambu lab" matches "Bambu Lab".
+
+Filter the list with the **All**, **Equipment**, and **Accessories** tabs, by brand, and by printer. **Not tied to a printer** shows items for any printer. In [Settings](#%EF%B8%8F-settings), **🧰 Equipment** next to a printer opens the list for that printer.
+
+When something wears out or you give it away, edit it and tick **Retired**. Retired items are hidden unless you tick **Show retired**.
+
 ## ⚙️ Settings
 
 Select **⚙️ Settings** at the top of the list. The settings page has three parts:
@@ -117,5 +130,6 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET`, `POST /api/locations`; `PUT`, `DELETE /api/locations/{id}` | Storage locations |
 | `GET`, `POST /api/printers`; `PUT`, `DELETE /api/printers/{id}` | Printers |
 | `GET`, `PUT /api/settings` | Low-stock threshold and default currency |
+| `GET`, `POST /api/equipment`; `GET`, `PUT`, `DELETE /api/equipment/{id}` | Equipment and accessories. Filters: `category`, `brand_id`, `printer` (an id or `none`), `q`, `include_retired` |
 | `GET /api/stats` | Dashboard numbers |
 | `GET /api/health` | Health check |

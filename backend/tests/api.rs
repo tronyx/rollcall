@@ -731,3 +731,179 @@ async fn humidity_readings(pool: PgPool) {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
+
+#[sqlx::test]
+async fn equipment_and_accessories(pool: PgPool) {
+    let app = app(pool);
+    let (_, x1) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": "X1C", "is_default": true })),
+    )
+    .await;
+    let (_, mk4) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": "MK4" })),
+    )
+    .await;
+    let x1_id = x1["id"].as_str().unwrap().to_string();
+
+    let (status, nozzle) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(json!({
+            "category": "equipment", "kind": "Nozzle", "name": " Hardened steel 0.4 ",
+            "brand_name": "bambu lab", "printer_id": x1_id, "quantity": 2,
+            "acquired_on": "2026-11-01", "acquired_from": "store.bambulab.com", "price": 29.99,
+            "discounted": true, "discount_note": "Bundle"
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{nozzle}");
+    assert_eq!(nozzle["name"], "Hardened steel 0.4");
+    assert_eq!(nozzle["brand_name"], "bambu lab");
+    assert_eq!(nozzle["printer_name"], "X1C");
+    assert_eq!(nozzle["quantity"], 2);
+    assert_eq!(nozzle["currency"], "USD");
+    assert_eq!(nozzle["acquisition"], "bought");
+    assert_eq!(nozzle["discount_note"], "Bundle");
+
+    // The brand is shared with filaments, matched without case.
+    let (_, spool) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#FF0000", 1000.0)),
+    )
+    .await;
+    assert_eq!(spool["brand_id"], nozzle["brand_id"]);
+
+    let (_, plate) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(
+            json!({ "category": "accessory", "kind": "Build plate", "name": "Textured PEI",
+                     "brand_name": "Prusa", "printer_id": mk4["id"], "acquisition": "gift" }),
+        ),
+    )
+    .await;
+    assert_eq!(plate["acquisition"], "gift");
+    let (_, tool) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(json!({ "category": "accessory", "kind": "Tool", "name": "Flush cutters" })),
+    )
+    .await;
+    assert!(tool["brand_id"].is_null());
+    assert!(tool["printer_id"].is_null());
+
+    async fn names(app: &Router, uri: &str) -> Vec<String> {
+        let (status, v) = call(app, Method::GET, uri, None).await;
+        assert_eq!(status, StatusCode::OK, "{uri}: {v}");
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e["name"].as_str().unwrap().to_string())
+            .collect()
+    }
+    assert_eq!(names(&app, "/equipment").await.len(), 3);
+    assert_eq!(
+        names(&app, "/equipment?category=accessory").await,
+        ["Textured PEI", "Flush cutters"]
+    );
+    let brand = nozzle["brand_id"].as_str().unwrap();
+    assert_eq!(
+        names(&app, &format!("/equipment?brand_id={brand}")).await,
+        ["Hardened steel 0.4"]
+    );
+    assert_eq!(
+        names(&app, &format!("/equipment?printer={x1_id}")).await,
+        ["Hardened steel 0.4"]
+    );
+    assert_eq!(
+        names(&app, "/equipment?printer=none").await,
+        ["Flush cutters"]
+    );
+    assert_eq!(names(&app, "/equipment?q=pei").await, ["Textured PEI"]);
+    let (status, _) = call(&app, Method::GET, "/equipment?printer=x1", None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // Edit: retire the nozzle and clear its discount. Retired items are hidden by default.
+    let id = nozzle["id"].as_str().unwrap();
+    let (status, edited) = call(
+        &app,
+        Method::PUT,
+        &format!("/equipment/{id}"),
+        Some(
+            json!({ "category": "equipment", "kind": "Nozzle", "name": "Hardened steel 0.4",
+                     "brand_name": "Bambu Lab", "printer_id": x1_id, "retired": true,
+                     "discount_note": "dropped" }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{edited}");
+    assert_eq!(edited["retired"], true);
+    assert_eq!(edited["quantity"], 1);
+    assert!(edited["discount_note"].is_null());
+    assert_eq!(names(&app, "/equipment").await.len(), 2);
+    assert_eq!(
+        names(&app, "/equipment?include_retired=true").await.len(),
+        3
+    );
+    let (status, _) = call(&app, Method::GET, &format!("/equipment/{id}"), None).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Errors.
+    let (status, _) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(json!({ "category": "accessory", "name": "  " })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(json!({ "category": "accessory", "name": "Spare", "quantity": -1 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let missing = "/equipment/0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f";
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        missing,
+        Some(json!({ "category": "accessory", "name": "Ghost" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Deleting a printer unlinks its items; deleting an item works once.
+    call(
+        &app,
+        Method::DELETE,
+        &format!("/printers/{}", mk4["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    let (_, p) = call(
+        &app,
+        Method::GET,
+        &format!("/equipment/{}", plate["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert!(p["printer_id"].is_null());
+    let (status, _) = call(&app, Method::DELETE, &format!("/equipment/{id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = call(&app, Method::DELETE, &format!("/equipment/{id}"), None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}

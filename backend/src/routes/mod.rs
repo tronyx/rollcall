@@ -8,6 +8,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
+mod equipment;
 mod filaments;
 mod humidity;
 mod lookups;
@@ -27,6 +28,7 @@ pub fn api(state: AppState) -> Router {
         .merge(settings::routes())
         .merge(tuned::routes())
         .merge(humidity::routes())
+        .merge(equipment::routes())
         .with_state(state)
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type { NewPrinter, Printer } from '#lib/api/types.ts';
 
@@ -182,6 +183,12 @@
 						</button>
 						<button type="button" class="text-sm" onclick={() => (confirmId = null)}>Cancel</button>
 					{:else}
+						<a
+							href="{resolve('/equipment')}?printer={p.id}"
+							class="text-sm text-slate-600 hover:underline dark:text-slate-300"
+						>
+							🧰 Equipment
+						</a>
 						<button type="button" class={link} onclick={() => startEdit(p)}>Edit</button>
 						<button
 							type="button"
