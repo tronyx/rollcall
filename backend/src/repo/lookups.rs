@@ -103,3 +103,26 @@ pub async fn delete_location(pool: &PgPool, id: Uuid) -> AppResult<()> {
     }
     Ok(())
 }
+
+pub async fn update_location(pool: &PgPool, id: Uuid, input: NewLocation) -> AppResult<Location> {
+    let name = input.name.trim();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("name is required".into()));
+    }
+    sqlx::query_as!(
+        Location,
+        r#"
+        UPDATE locations SET name = $2, kind = $3, description = $4, sort_order = $5
+        WHERE id = $1
+        RETURNING id, name, kind AS "kind: LocationKind", description, sort_order
+        "#,
+        id,
+        name,
+        input.kind as _,
+        crate::models::trim_opt(input.description),
+        input.sort_order
+    )
+    .fetch_optional(pool)
+    .await?
+    .ok_or(AppError::NotFound("location"))
+}

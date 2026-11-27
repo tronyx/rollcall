@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type {
 		Brand,
@@ -75,12 +76,19 @@
 	<h1 class="flex items-center gap-2 text-xl font-bold tracking-tight">
 		<img src="/favicon.svg" alt="" class="size-7" /> Rollcall
 	</h1>
-	<button
-		type="button"
-		onclick={() => (addOpen = true)}
-		class="hidden rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 sm:block"
-		>+ Add spool</button
-	>
+	<div class="flex items-center gap-3">
+		<a
+			href={resolve('/settings')}
+			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
+			>⚙️ Settings</a
+		>
+		<button
+			type="button"
+			onclick={() => (addOpen = true)}
+			class="hidden rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 sm:block"
+			>+ Add spool</button
+		>
+	</div>
 </header>
 
 <div class="space-y-4">

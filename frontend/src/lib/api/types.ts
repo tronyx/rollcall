@@ -209,6 +209,29 @@ export interface Location {
 	sort_order: number;
 }
 
+export interface NewLocation {
+	name: string;
+	kind: LocationKind;
+	description: string | null;
+	sort_order: number;
+}
+
+export interface Printer {
+	id: string;
+	name: string;
+	model: string | null;
+	nozzle_diameter_mm: number;
+	is_default: boolean;
+	notes: string | null;
+}
+
+export type NewPrinter = Omit<Printer, 'id'>;
+
+export interface AppSettings {
+	low_stock_threshold_g: number;
+	default_currency: string;
+}
+
 export type FieldSource =
 	| 'shopify_json'
 	| 'json_ld'

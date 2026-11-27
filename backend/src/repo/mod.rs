@@ -3,6 +3,7 @@
 
 pub mod filaments;
 pub mod lookups;
+pub mod settings;
 pub mod spools;
 pub mod stats;
 

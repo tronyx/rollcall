@@ -1,11 +1,15 @@
 import type {
+	AppSettings,
 	Brand,
 	CreateSpool,
 	Filament,
 	InventoryStats,
 	Location,
 	Material,
+	NewLocation,
+	NewPrinter,
 	ParseResult,
+	Printer,
 	Spool,
 	SpoolFilter,
 	UpdateFilament,
@@ -75,5 +79,15 @@ export const api = {
 	parseUrl: (url: string) => request<ParseResult>('POST', '/filaments/parse-url', { url }),
 	brands: () => request<Brand[]>('GET', '/brands'),
 	materials: () => request<Material[]>('GET', '/materials'),
-	locations: () => request<Location[]>('GET', '/locations')
+	locations: () => request<Location[]>('GET', '/locations'),
+	createLocation: (body: NewLocation) => request<Location>('POST', '/locations', body),
+	updateLocation: (id: string, body: NewLocation) =>
+		request<Location>('PUT', `/locations/${id}`, body),
+	deleteLocation: (id: string) => request<void>('DELETE', `/locations/${id}`),
+	printers: () => request<Printer[]>('GET', '/printers'),
+	createPrinter: (body: NewPrinter) => request<Printer>('POST', '/printers', body),
+	updatePrinter: (id: string, body: NewPrinter) => request<Printer>('PUT', `/printers/${id}`, body),
+	deletePrinter: (id: string) => request<void>('DELETE', `/printers/${id}`),
+	settings: () => request<AppSettings>('GET', '/settings'),
+	updateSettings: (body: AppSettings) => request<AppSettings>('PUT', '/settings', body)
 };

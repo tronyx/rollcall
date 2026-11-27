@@ -351,3 +351,141 @@ async fn edit_filament(pool: PgPool) {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test]
+async fn settings_printers_and_locations(pool: PgPool) {
+    let app = app(pool);
+
+    // Settings: defaults, update, and the dashboard follows the threshold.
+    let (status, s) = call(&app, Method::GET, "/settings", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(s["low_stock_threshold_g"], 200.0);
+    assert_eq!(s["default_currency"], "USD");
+    call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#FF0000", 300.0)),
+    )
+    .await;
+    let (_, stats) = call(&app, Method::GET, "/stats", None).await;
+    assert_eq!(stats["low_stock_count"], 0);
+    let (status, s) = call(
+        &app,
+        Method::PUT,
+        "/settings",
+        Some(json!({ "low_stock_threshold_g": 350, "default_currency": " eur " })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{s}");
+    assert_eq!(s["default_currency"], "EUR");
+    let (_, stats) = call(&app, Method::GET, "/stats", None).await;
+    assert_eq!(stats["low_stock_count"], 1);
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        "/settings",
+        Some(json!({ "low_stock_threshold_g": -1, "default_currency": "USD" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Printers: only one default at a time.
+    let (status, x1) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": " X1C ", "model": "Bambu Lab X1 Carbon", "is_default": true })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{x1}");
+    assert_eq!(x1["name"], "X1C");
+    assert_eq!(x1["nozzle_diameter_mm"], 0.4);
+    let (_, mk4) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": "MK4", "nozzle_diameter_mm": 0.6, "is_default": true })),
+    )
+    .await;
+    let (_, list) = call(&app, Method::GET, "/printers", None).await;
+    let defaults: Vec<_> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|p| p["is_default"] == true)
+        .map(|p| p["name"].clone())
+        .collect();
+    assert_eq!(defaults, vec![json!("MK4")]);
+    let x1_uri = format!("/printers/{}", x1["id"].as_str().unwrap());
+    let (status, x1b) = call(
+        &app,
+        Method::PUT,
+        &x1_uri,
+        Some(json!({ "name": "X1C", "notes": "AMS", "is_default": true })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(x1b["is_default"], true);
+    let (_, list) = call(&app, Method::GET, "/printers", None).await;
+    assert_eq!(list[0]["name"], "X1C");
+    assert_eq!(list[1]["is_default"], false);
+    let (status, _) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": "x1c" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let mk4_uri = format!("/printers/{}", mk4["id"].as_str().unwrap());
+    let (status, _) = call(&app, Method::DELETE, &mk4_uri, None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = call(&app, Method::DELETE, &mk4_uri, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Locations: rename, and deleting one leaves its spools without a location.
+    let (_, loc) = call(
+        &app,
+        Method::POST,
+        "/locations",
+        Some(json!({ "name": "Dry Box 1", "kind": "dry_box" })),
+    )
+    .await;
+    let loc_uri = format!("/locations/{}", loc["id"].as_str().unwrap());
+    let (status, loc2) = call(
+        &app,
+        Method::PUT,
+        &loc_uri,
+        Some(
+            json!({ "name": "Dry Box A", "kind": "dry_box", "description": "  ", "sort_order": 3 }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(loc2["name"], "Dry Box A");
+    assert_eq!(loc2["description"], Value::Null);
+    assert_eq!(loc2["sort_order"], 3);
+    let mut body = new_spool("Blue", "#0000FF", 900.0);
+    body["location_id"] = loc["id"].clone();
+    let (_, spool) = call(&app, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(spool["location_name"], "Dry Box A");
+    let (status, _) = call(&app, Method::DELETE, &loc_uri, None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, spool) = call(
+        &app,
+        Method::GET,
+        &format!("/spools/{}", spool["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert_eq!(spool["location_id"], Value::Null);
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        &loc_uri,
+        Some(json!({ "name": "Gone", "kind": "other" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
