@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT remaining_weight_g, initial_weight_g, tare_weight_g,\n               status AS \"status: SpoolStatus\"\n        FROM spools WHERE id = $1 FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "remaining_weight_g",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 1,
+        "name": "initial_weight_g",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 2,
+        "name": "tare_weight_g",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "status: SpoolStatus",
+        "type_info": {
+          "Custom": {
+            "name": "spool_status",
+            "kind": {
+              "Enum": [
+                "sealed",
+                "active",
+                "drying",
+                "empty",
+                "archived"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a0577c65bd050dd0dc19896e5bbff89bf64e74714332b7accf592fca6ba25994"
+}

@@ -1,0 +1,40 @@
+# Local development: `docker compose up -d db` starts PostgreSQL 18 only.
+# Full stack (API + built frontend): `docker compose --profile full up -d --build`.
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rollcall
+      POSTGRES_PASSWORD: rollcall
+      POSTGRES_DB: rollcall
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/18/docker,
+      # so the volume is mounted one level up (not at .../data as in <= 17).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rollcall -d rollcall"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://rollcall:rollcall@db:5432/rollcall
+      # Optional: enables the LLM fallback in the URL parser.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

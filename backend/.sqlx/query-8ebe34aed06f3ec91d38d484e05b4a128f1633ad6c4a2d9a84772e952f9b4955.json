@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE spools SET\n            filament_id      = $2,\n            label_code       = $3,\n            location_id      = $4,\n            status           = $5::spool_status,\n            initial_weight_g = $6,\n            tare_weight_g    = $7,\n            purchase_price   = $8,\n            currency         = upper($9),\n            purchase_date    = $10,\n            vendor           = $11,\n            lot_number       = $12,\n            last_dried_at    = $13,\n            notes            = $14,\n            opened_at  = CASE WHEN $5::spool_status IN ('active', 'drying', 'empty')\n                              THEN coalesce(opened_at, now()) ELSE opened_at END,\n            emptied_at = CASE WHEN $5::spool_status = 'empty' THEN coalesce(emptied_at, now()) END\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "spool_status",
+            "kind": {
+              "Enum": [
+                "sealed",
+                "active",
+                "drying",
+                "empty",
+                "archived"
+              ]
+            }
+          }
+        },
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Text",
+        "Date",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8ebe34aed06f3ec91d38d484e05b4a128f1633ad6c4a2d9a84772e952f9b4955"
+}

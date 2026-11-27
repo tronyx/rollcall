@@ -1,0 +1,71 @@
+import type {
+	Brand,
+	CreateSpool,
+	InventoryStats,
+	Location,
+	Material,
+	ParseResult,
+	Spool,
+	SpoolFilter,
+	WeightAdjustment,
+	WeightChange,
+	WeightEvent
+} from './types';
+
+export class ApiError extends Error {
+	constructor(
+		public status: number,
+		public code: string,
+		message: string
+	) {
+		super(message);
+	}
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+	let res: Response;
+	try {
+		res = await fetch(`/api${path}`, {
+			method,
+			headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+			body: body === undefined ? undefined : JSON.stringify(body)
+		});
+	} catch {
+		throw new ApiError(0, 'network', "Can't reach the Rollcall server.");
+	}
+	if (res.status === 204) return undefined as T;
+	const data = await res.json().catch(() => null);
+	if (!res.ok) {
+		throw new ApiError(
+			res.status,
+			data?.error?.code ?? 'unknown',
+			data?.error?.message ?? `Request failed (${res.status})`
+		);
+	}
+	return data as T;
+}
+
+export function toQuery(params: object): string {
+	const q = new URLSearchParams();
+	for (const [k, v] of Object.entries(params)) {
+		if (v === undefined || v === null || v === '' || v === false) continue;
+		q.set(k, String(v));
+	}
+	const s = q.toString();
+	return s ? `?${s}` : '';
+}
+
+export const api = {
+	stats: () => request<InventoryStats>('GET', '/stats'),
+	spools: (filter: SpoolFilter = {}) => request<Spool[]>('GET', `/spools${toQuery(filter)}`),
+	spool: (id: string) => request<Spool>('GET', `/spools/${id}`),
+	createSpool: (body: CreateSpool) => request<Spool>('POST', '/spools', body),
+	deleteSpool: (id: string) => request<void>('DELETE', `/spools/${id}`),
+	adjustWeight: (id: string, body: WeightAdjustment) =>
+		request<WeightChange>('POST', `/spools/${id}/weight`, body),
+	weightEvents: (id: string) => request<WeightEvent[]>('GET', `/spools/${id}/weight-events`),
+	parseUrl: (url: string) => request<ParseResult>('POST', '/filaments/parse-url', { url }),
+	brands: () => request<Brand[]>('GET', '/brands'),
+	materials: () => request<Material[]>('GET', '/materials'),
+	locations: () => request<Location[]>('GET', '/locations')
+};
