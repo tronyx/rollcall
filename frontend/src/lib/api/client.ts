@@ -10,8 +10,10 @@ import type {
 	NewPrinter,
 	ParseResult,
 	Printer,
+	SaveTunedSettings,
 	Spool,
 	SpoolFilter,
+	TunedSettings,
 	UpdateFilament,
 	UpdateSpool,
 	WeightAdjustment,
@@ -88,6 +90,10 @@ export const api = {
 	createPrinter: (body: NewPrinter) => request<Printer>('POST', '/printers', body),
 	updatePrinter: (id: string, body: NewPrinter) => request<Printer>('PUT', `/printers/${id}`, body),
 	deletePrinter: (id: string) => request<void>('DELETE', `/printers/${id}`),
+	tuned: (filamentId: string) => request<TunedSettings[]>('GET', `/filaments/${filamentId}/tuned`),
+	saveTuned: (filamentId: string, body: SaveTunedSettings) =>
+		request<TunedSettings>('PUT', `/filaments/${filamentId}/tuned`, body),
+	deleteTuned: (id: string) => request<void>('DELETE', `/tuned/${id}`),
 	settings: () => request<AppSettings>('GET', '/settings'),
 	updateSettings: (body: AppSettings) => request<AppSettings>('PUT', '/settings', body)
 };

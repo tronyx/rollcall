@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO tuned_settings (\n            filament_id, printer_id, nozzle_temp_c, first_layer_nozzle_temp_c, bed_temp_c,\n            print_speed_mm_s, max_volumetric_speed_mm3_s, flow_ratio, pressure_advance,\n            retraction_length_mm, retraction_speed_mm_s, fan_speed_pct, drying_temp_c,\n            drying_time_min, notes, verified_at\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,\n                CASE WHEN $16 THEN now() END)\n        ON CONFLICT ON CONSTRAINT tuned_settings_filament_printer_uq DO UPDATE SET\n            nozzle_temp_c = EXCLUDED.nozzle_temp_c,\n            first_layer_nozzle_temp_c = EXCLUDED.first_layer_nozzle_temp_c,\n            bed_temp_c = EXCLUDED.bed_temp_c,\n            print_speed_mm_s = EXCLUDED.print_speed_mm_s,\n            max_volumetric_speed_mm3_s = EXCLUDED.max_volumetric_speed_mm3_s,\n            flow_ratio = EXCLUDED.flow_ratio,\n            pressure_advance = EXCLUDED.pressure_advance,\n            retraction_length_mm = EXCLUDED.retraction_length_mm,\n            retraction_speed_mm_s = EXCLUDED.retraction_speed_mm_s,\n            fan_speed_pct = EXCLUDED.fan_speed_pct,\n            drying_temp_c = EXCLUDED.drying_temp_c,\n            drying_time_min = EXCLUDED.drying_time_min,\n            notes = EXCLUDED.notes,\n            verified_at = CASE WHEN $16 THEN coalesce(tuned_settings.verified_at, now()) END\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int2",
+        "Int2",
+        "Int2",
+        "Int4",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e2b431c833794b8fcb676f6e35711a2fbad57adeafebf9f121b6a9e1b624aaa7"
+}

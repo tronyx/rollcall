@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	contrastText,
 	dateOnly,
+	dayOf,
 	eventLabel,
 	fromLocalInput,
 	grams,
@@ -58,5 +59,10 @@ describe('format', () => {
 		expect(iso).not.toBeNull();
 		expect(toLocalInput(iso)).toBe('2026-11-27T12:30');
 		expect(fromLocalInput('')).toBeNull();
+	});
+
+	it('shows the local day of a timestamp', () => {
+		expect(dayOf('2026-11-27T15:00:00Z')).toMatch(/^Nov 2[67], 2026$/);
+		expect(dayOf(null)).toBe('');
 	});
 });

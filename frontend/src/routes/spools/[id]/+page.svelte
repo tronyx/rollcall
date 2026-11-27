@@ -14,6 +14,7 @@
 	import ColorSwatch from '#lib/components/ColorSwatch.svelte';
 	import FilamentEditForm from '#lib/components/FilamentEditForm.svelte';
 	import SpoolEditForm from '#lib/components/SpoolEditForm.svelte';
+	import TunedSettingsSection from '#lib/components/TunedSettingsSection.svelte';
 	import {
 		dateOnly,
 		dateTime,
@@ -516,6 +517,10 @@
 						{/if}
 					{/if}
 				</section>
+			{/if}
+
+			{#if filament}
+				<TunedSettingsSection {filament} {card} />
 			{/if}
 
 			<!-- Delete -->

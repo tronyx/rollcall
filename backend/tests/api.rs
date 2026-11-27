@@ -489,3 +489,118 @@ async fn settings_printers_and_locations(pool: PgPool) {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test]
+async fn tuned_settings_per_printer(pool: PgPool) {
+    let app = app(pool);
+    let (_, spool) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#FF0000", 1000.0)),
+    )
+    .await;
+    let fid = spool["filament_id"].as_str().unwrap().to_string();
+    let (_, x1) = call(
+        &app,
+        Method::POST,
+        "/printers",
+        Some(json!({ "name": "X1C", "is_default": true })),
+    )
+    .await;
+    let x1_id = x1["id"].as_str().unwrap().to_string();
+    let uri = format!("/filaments/{fid}/tuned");
+
+    let (status, list) = call(&app, Method::GET, &uri, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list, json!([]));
+
+    // One row for the printer, one for any printer.
+    let (status, t) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({
+            "printer_id": x1_id, "nozzle_temp_c": 215, "flow_ratio": 0.98,
+            "pressure_advance": 0.025, "notes": "  matte finish  ", "verified": true
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{t}");
+    assert_eq!(t["printer_name"], "X1C");
+    assert_eq!(t["flow_ratio"], 0.98);
+    assert_eq!(t["notes"], "matte finish");
+    let verified_at = t["verified_at"].clone();
+    assert!(verified_at.is_string());
+    let (_, any) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({ "printer_id": null, "bed_temp_c": 60 })),
+    )
+    .await;
+    assert!(any["printer_name"].is_null());
+    assert!(any["verified_at"].is_null());
+
+    // Saving again replaces the row and keeps the first verified date.
+    let (_, t2) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({ "printer_id": x1_id, "nozzle_temp_c": 220, "verified": true })),
+    )
+    .await;
+    assert_eq!(t2["id"], t["id"]);
+    assert_eq!(t2["nozzle_temp_c"], 220);
+    assert!(t2["flow_ratio"].is_null());
+    assert_eq!(t2["verified_at"], verified_at);
+    let (_, t3) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({ "printer_id": x1_id, "nozzle_temp_c": 220 })),
+    )
+    .await;
+    assert!(t3["verified_at"].is_null());
+
+    // The any-printer row is listed first.
+    let (_, list) = call(&app, Method::GET, &uri, None).await;
+    let list = list.as_array().unwrap();
+    assert_eq!(list.len(), 2);
+    assert!(list[0]["printer_id"].is_null());
+    assert_eq!(list[1]["printer_id"], x1_id.as_str());
+
+    // Bad values, an unknown printer, and an unknown filament.
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({ "printer_id": x1_id, "flow_ratio": 3 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = call(
+        &app,
+        Method::PUT,
+        &uri,
+        Some(json!({ "printer_id": "0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let missing = "/filaments/0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f/tuned";
+    let (status, _) = call(&app, Method::GET, missing, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = call(&app, Method::PUT, missing, Some(json!({}))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Deleting a printer removes its settings; deleting a row works once.
+    let (status, _) = call(&app, Method::DELETE, &format!("/printers/{x1_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, list) = call(&app, Method::GET, &uri, None).await;
+    assert_eq!(list.as_array().unwrap().len(), 1);
+    let any_id = any["id"].as_str().unwrap();
+    let (status, _) = call(&app, Method::DELETE, &format!("/tuned/{any_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = call(&app, Method::DELETE, &format!("/tuned/{any_id}"), None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}

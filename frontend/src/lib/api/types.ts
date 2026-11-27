@@ -227,6 +227,39 @@ export interface Printer {
 
 export type NewPrinter = Omit<Printer, 'id'>;
 
+/** The values you can tune per printer. Empty ones fall back to the filament's. */
+export interface TunedValues {
+	nozzle_temp_c: number | null;
+	first_layer_nozzle_temp_c: number | null;
+	bed_temp_c: number | null;
+	print_speed_mm_s: number | null;
+	max_volumetric_speed_mm3_s: number | null;
+	flow_ratio: number | null;
+	pressure_advance: number | null;
+	retraction_length_mm: number | null;
+	retraction_speed_mm_s: number | null;
+	fan_speed_pct: number | null;
+	drying_temp_c: number | null;
+	drying_time_min: number | null;
+}
+
+export interface TunedSettings extends TunedValues {
+	id: string;
+	filament_id: string;
+	/** Null for the settings that apply to any printer. */
+	printer_id: string | null;
+	printer_name: string | null;
+	notes: string | null;
+	verified_at: string | null;
+	updated_at: string;
+}
+
+export interface SaveTunedSettings extends TunedValues {
+	printer_id: string | null;
+	notes: string | null;
+	verified: boolean;
+}
+
 export interface AppSettings {
 	low_stock_threshold_g: number;
 	default_currency: string;

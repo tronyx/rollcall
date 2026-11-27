@@ -35,6 +35,12 @@ export function dateTime(iso: string | null): string {
 	return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** A timestamp's local date: "Nov 27, 2026". */
+export function dayOf(iso: string | null): string {
+	if (!iso) return '';
+	return new Date(iso).toLocaleDateString('en-US', { dateStyle: 'medium' });
+}
+
 /** "2026-11-27" (a date with no time) → "Nov 27, 2026", without a time-zone shift. */
 export function dateOnly(ymd: string | null): string {
 	if (!ymd) return '';

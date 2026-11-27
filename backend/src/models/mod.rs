@@ -8,9 +8,11 @@ mod filament;
 mod lookups;
 mod spool;
 mod stats;
+mod tuned;
 
 pub use enums::*;
 pub use filament::*;
 pub use lookups::*;
 pub use spool::*;
 pub use stats::*;
+pub use tuned::*;

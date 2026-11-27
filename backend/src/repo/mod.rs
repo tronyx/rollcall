@@ -6,6 +6,7 @@ pub mod lookups;
 pub mod settings;
 pub mod spools;
 pub mod stats;
+pub mod tuned;
 
 /// Turns user text into an ILIKE pattern, escaping wildcards it contains.
 pub(crate) fn contains_pattern(input: &str) -> Option<String> {

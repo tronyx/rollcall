@@ -36,6 +36,7 @@ Select a spool's color name to open its page. It has:
 - The full weight history, with **Undo** on the latest change.
 - **This spool**: edit the status, location, weights, price, purchase date, vendor, label code, lot number, last drying date, and notes. The remaining weight only changes through the weight buttons, so the history stays complete.
 - **Filament**: edit the brand, material, color, swatch, diameter, temperatures, speeds, drying settings, TD value, and product page. Spools of the same product share these details, so the page tells you when a change affects more than one spool.
+- **Tuned settings**: what you've dialed in for this filament on each printer. See below.
 - **Delete spool**: removes the spool and its history. To keep the history, set the status to `archived` instead.
 
 The page has its own address, `/spools/<id>`, so you can bookmark it.
@@ -54,6 +55,15 @@ Each label has a QR code, the color, brand, material and product, the print temp
 - **QR codes open**: the address your phone opens Rollcall at, such as `http://192.168.1.20:8080`. It starts out as the address in your browser, so change it if that's `localhost`.
 
 The browser remembers these settings. In the print dialog, choose your label printer and set the margins to none, if it asks.
+
+## 🎯 Tuned settings
+
+The filament's temperatures and speeds are the maker's ranges. **Tuned settings**, on the spool page, hold what actually works for you: nozzle and first-layer temperature, bed, speed, max volumetric speed, flow ratio, pressure advance, retraction, fan, and drying.
+
+- Select **+ Add** and choose a printer, or **Any printer** for settings that apply everywhere. Each printer gets one set. Add your printers in [Settings](#%EF%B8%8F-settings) first.
+- Fill in only what you changed. Empty fields fall back to the filament's values, which the form shows in grey and the summary shows as "maker".
+- Tick **I've printed with these settings and they work** to mark them tested. The date you first marked them is kept until you untick it.
+- The settings belong to the filament, so every spool of it shows them. Deleting a printer deletes its settings too.
 
 ## 📍 Locations and status
 
@@ -83,6 +93,7 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET /api/spools/{id}/weight-events` | A spool's weight history |
 | `GET /api/filaments`, `GET /api/filaments/{id}` | Filament products |
 | `PUT /api/filaments/{id}` | Change a filament's details (for every spool that uses it) |
+| `GET`, `PUT /api/filaments/{id}/tuned`; `DELETE /api/tuned/{id}` | Tuned settings for a filament, per printer or for any printer |
 | `POST /api/filaments/parse-url` | Read a product page and return a draft |
 | `GET /api/brands`, `GET /api/materials` | Lookup lists |
 | `GET`, `POST /api/locations`; `PUT`, `DELETE /api/locations/{id}` | Storage locations |
