@@ -101,3 +101,10 @@ export function storeName(url: string | null | undefined): string {
 		return '';
 	}
 }
+
+export type HumidityLevel = 'dry' | 'ok' | 'humid';
+
+/** Rough bands for filament storage: under 20% is dry, over 40% needs drying soon. */
+export function humidityLevel(pct: number): HumidityLevel {
+	return pct < 20 ? 'dry' : pct <= 40 ? 'ok' : 'humid';
+}

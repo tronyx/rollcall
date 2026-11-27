@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	acquiredLine,
+	humidityLevel,
 	storeName,
 	contrastText,
 	dateOnly,
@@ -83,5 +84,12 @@ describe('format', () => {
 		expect(storeName('https://us.store.bambulab.com/products/pla')).toBe('us.store.bambulab.com');
 		expect(storeName(null)).toBe('');
 		expect(storeName('not a url')).toBe('');
+	});
+
+	it('bands humidity readings', () => {
+		expect(humidityLevel(12)).toBe('dry');
+		expect(humidityLevel(20)).toBe('ok');
+		expect(humidityLevel(40)).toBe('ok');
+		expect(humidityLevel(40.1)).toBe('humid');
 	});
 });

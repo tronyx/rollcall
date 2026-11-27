@@ -14,6 +14,7 @@
 	import ColorSwatch from '#lib/components/ColorSwatch.svelte';
 	import FilamentEditForm from '#lib/components/FilamentEditForm.svelte';
 	import SpoolEditForm from '#lib/components/SpoolEditForm.svelte';
+	import HumiditySection from '#lib/components/HumiditySection.svelte';
 	import TunedSettingsSection from '#lib/components/TunedSettingsSection.svelte';
 	import {
 		acquiredLine,
@@ -525,6 +526,8 @@
 			{#if filament}
 				<TunedSettingsSection {filament} {card} />
 			{/if}
+
+			<HumiditySection spoolId={spool.id} {card} />
 
 			<!-- Delete -->
 			<section class={card}>

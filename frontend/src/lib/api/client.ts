@@ -3,9 +3,11 @@ import type {
 	Brand,
 	CreateSpool,
 	Filament,
+	HumidityReading,
 	InventoryStats,
 	Location,
 	Material,
+	NewHumidityReading,
 	NewLocation,
 	NewPrinter,
 	ParseResult,
@@ -90,6 +92,10 @@ export const api = {
 	createPrinter: (body: NewPrinter) => request<Printer>('POST', '/printers', body),
 	updatePrinter: (id: string, body: NewPrinter) => request<Printer>('PUT', `/printers/${id}`, body),
 	deletePrinter: (id: string) => request<void>('DELETE', `/printers/${id}`),
+	humidity: (spoolId: string) => request<HumidityReading[]>('GET', `/spools/${spoolId}/humidity`),
+	addHumidity: (spoolId: string, body: NewHumidityReading) =>
+		request<HumidityReading>('POST', `/spools/${spoolId}/humidity`, body),
+	deleteHumidity: (id: string) => request<void>('DELETE', `/humidity/${id}`),
 	tuned: (filamentId: string) => request<TunedSettings[]>('GET', `/filaments/${filamentId}/tuned`),
 	saveTuned: (filamentId: string, body: SaveTunedSettings) =>
 		request<TunedSettings>('PUT', `/filaments/${filamentId}/tuned`, body),
