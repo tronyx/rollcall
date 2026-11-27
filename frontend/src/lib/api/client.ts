@@ -12,6 +12,8 @@ import type {
 	NewHumidityReading,
 	NewLocation,
 	NewPrinter,
+	Photo,
+	PhotoOwner,
 	ParseResult,
 	Printer,
 	SaveEquipment,
@@ -39,10 +41,12 @@ export class ApiError extends Error {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	let res: Response;
 	try {
+		// FormData sets its own multipart content type and boundary.
+		const form = body instanceof FormData;
 		res = await fetch(`/api${path}`, {
 			method,
-			headers: body === undefined ? undefined : { 'content-type': 'application/json' },
-			body: body === undefined ? undefined : JSON.stringify(body)
+			headers: body === undefined || form ? undefined : { 'content-type': 'application/json' },
+			body: body === undefined ? undefined : form ? body : JSON.stringify(body)
 		});
 	} catch {
 		throw new ApiError(0, 'network', "Can't reach the Rollcall server.");
@@ -105,6 +109,17 @@ export const api = {
 	addHumidity: (spoolId: string, body: NewHumidityReading) =>
 		request<HumidityReading>('POST', `/spools/${spoolId}/humidity`, body),
 	deleteHumidity: (id: string) => request<void>('DELETE', `/humidity/${id}`),
+	photos: (owner: PhotoOwner) => request<Photo[]>('GET', `/photos${toQuery(owner)}`),
+	uploadPhoto: (owner: PhotoOwner, file: File, caption?: string) => {
+		const form = new FormData();
+		for (const [k, v] of Object.entries(owner)) form.append(k, v);
+		if (caption) form.append('caption', caption);
+		form.append('file', file);
+		return request<Photo>('POST', '/photos', form);
+	},
+	setPhotoCaption: (id: string, caption: string | null) =>
+		request<Photo>('PATCH', `/photos/${id}`, { caption }),
+	deletePhoto: (id: string) => request<void>('DELETE', `/photos/${id}`),
 	tuned: (filamentId: string) => request<TunedSettings[]>('GET', `/filaments/${filamentId}/tuned`),
 	saveTuned: (filamentId: string, body: SaveTunedSettings) =>
 		request<TunedSettings>('PUT', `/filaments/${filamentId}/tuned`, body),

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT EXISTS (SELECT 1 FROM spools WHERE id = $1)\n            OR EXISTS (SELECT 1 FROM filaments WHERE id = $2)\n            OR EXISTS (SELECT 1 FROM equipment WHERE id = $3) AS \"exists!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "eb8acbad7b7158d0e09833a89ced4c80bb649e1b224a694d1a548892212b9c26"
+}

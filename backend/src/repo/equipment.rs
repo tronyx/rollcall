@@ -30,7 +30,9 @@ async fn query(pool: &PgPool, id: Option<Uuid>, f: &EquipmentFilter) -> AppResul
                e.model, e.quantity, e.retired,
                e.acquisition AS "acquisition: AcquisitionKind", e.acquired_on, e.acquired_from,
                e.price, e.currency, e.discounted, e.discount_note, e.notes,
-               e.created_at, e.updated_at
+               e.created_at, e.updated_at,
+               (SELECT '/api/photos/' || ph.id || '/file' FROM photos ph
+                WHERE ph.equipment_id = e.id ORDER BY ph.created_at, ph.id LIMIT 1) AS photo_url
         FROM equipment e
         LEFT JOIN brands b   ON b.id = e.brand_id
         LEFT JOIN printers p ON p.id = e.printer_id

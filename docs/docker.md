@@ -22,18 +22,20 @@ Rollcall applies any new database migrations when it starts.
 
 ## 💾 Backups
 
-Everything is in the database. To make a backup:
+Everything is in the database, except the photos you upload, which are files in the `uploads` volume. To make a backup:
 
 ```bash
 docker compose exec db pg_dump -U rollcall rollcall > rollcall-backup.sql
+docker compose cp rollcall:/app/uploads ./rollcall-uploads
 ```
 
-To restore it into an empty database:
+To restore it into an empty database and an empty `uploads` volume:
 
 ```bash
 docker compose exec -T db psql -U rollcall rollcall < rollcall-backup.sql
+docker compose cp ./rollcall-uploads/. rollcall:/app/uploads
 ```
 
 ## 🔒 The container
 
-The server runs as the unprivileged user `rollcall` (UID 10001) and listens on port 8080. Settings are environment variables; see [Configuration](configuration.md).
+The server runs as the unprivileged user `rollcall` (UID 10001) and listens on port 8080. Uploaded photos are saved in `/app/uploads`, which is a volume. Settings are environment variables; see [Configuration](configuration.md).

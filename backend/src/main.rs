@@ -17,9 +17,21 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::connect(&config.database_url).await?;
     db::migrate(&pool).await?;
 
+    tokio::fs::create_dir_all(&config.upload_dir)
+        .await
+        .with_context(|| format!("creating UPLOAD_DIR {}", config.upload_dir.display()))?;
+    match rollcall::repo::photos::remove_orphan_files(&pool, &config.upload_dir).await {
+        Ok(0) => {}
+        Ok(n) => {
+            tracing::info!("removed {n} photo files whose spool, filament or equipment was deleted")
+        }
+        Err(e) => tracing::warn!("could not clean up photo files: {e}"),
+    }
+
     let state = AppState {
         pool,
         scraper: Arc::new(ScraperService::new(&config.scraper, config.llm.clone())?),
+        uploads: Arc::new(config.upload_dir.clone()),
     };
     let app = routes::router(state, &config);
 

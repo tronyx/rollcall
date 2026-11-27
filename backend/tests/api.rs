@@ -14,10 +14,18 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tower::ServiceExt;
 
+/// A fresh, empty folder for one test's uploads.
+fn test_upload_dir() -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("rollcall-test-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
 fn app(pool: PgPool) -> Router {
     let state = AppState {
         pool,
         scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
+        uploads: Arc::new(test_upload_dir()),
     };
     routes::api(state)
 }
@@ -262,10 +270,12 @@ async fn serves_frontend_with_spa_fallback(pool: PgPool) {
         cors_origin: None,
         scraper: ScraperConfig::default(),
         llm: None,
+        upload_dir: test_upload_dir(),
     };
     let state = AppState {
         pool,
         scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
+        uploads: Arc::new(config.upload_dir.clone()),
     };
     let app = routes::router(state, &config);
 
@@ -906,4 +916,227 @@ async fn equipment_and_accessories(pool: PgPool) {
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, _) = call(&app, Method::DELETE, &format!("/equipment/{id}"), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+/// A `multipart/form-data` upload: text fields, then an optional file.
+async fn upload(
+    app: &Router,
+    fields: &[(&str, &str)],
+    file: Option<(&str, &[u8])>,
+) -> (StatusCode, Value) {
+    const B: &str = "rollcall-test-boundary";
+    let mut body = Vec::new();
+    for (name, value) in fields {
+        body.extend_from_slice(
+            format!("--{B}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n")
+                .as_bytes(),
+        );
+    }
+    if let Some((file_name, bytes)) = file {
+        body.extend_from_slice(
+            format!(
+                "--{B}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{file_name}\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+            )
+            .as_bytes(),
+        );
+        body.extend_from_slice(bytes);
+        body.extend_from_slice(b"\r\n");
+    }
+    body.extend_from_slice(format!("--{B}--\r\n").as_bytes());
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/photos")
+        .header("content-type", format!("multipart/form-data; boundary={B}"))
+        .body(Body::from(body))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    (
+        status,
+        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    )
+}
+
+#[sqlx::test]
+async fn photos(pool: PgPool) {
+    let dir = test_upload_dir();
+    let app = routes::api(AppState {
+        pool: pool.clone(),
+        scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
+        uploads: Arc::new(dir.clone()),
+    });
+    let files = || std::fs::read_dir(&dir).unwrap().count();
+    let png: &[u8] = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR fake png body";
+    let jpg: &[u8] = b"\xFF\xD8\xFF\xE0\0\x10JFIF fake jpeg body";
+
+    let (_, spool) = call(
+        &app,
+        Method::POST,
+        "/spools",
+        Some(new_spool("Red", "#ff0000", 900.0)),
+    )
+    .await;
+    let spool_id = spool["id"].as_str().unwrap().to_string();
+    let filament_id = spool["filament_id"].as_str().unwrap().to_string();
+    let (_, item) = call(
+        &app,
+        Method::POST,
+        "/equipment",
+        Some(json!({ "category": "accessory", "name": "Textured PEI plate" })),
+    )
+    .await;
+    let item_id = item["id"].as_str().unwrap().to_string();
+
+    // One photo for each kind of owner.
+    let (status, p1) = upload(
+        &app,
+        &[("spool_id", &spool_id), ("caption", " On the shelf ")],
+        Some(("IMG_1.png", png)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{p1}");
+    assert_eq!(p1["content_type"], "image/png");
+    assert_eq!(p1["caption"], "On the shelf");
+    assert_eq!(p1["original_name"], "IMG_1.png");
+    assert_eq!(p1["size_bytes"], png.len());
+    let p1_id = p1["id"].as_str().unwrap().to_string();
+    assert_eq!(p1["url"], format!("/api/photos/{p1_id}/file"));
+    let (status, p2) = upload(
+        &app,
+        &[("filament_id", &filament_id)],
+        Some(("swatch.jpg", jpg)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{p2}");
+    assert_eq!(p2["content_type"], "image/jpeg");
+    let (status, p3) = upload(
+        &app,
+        &[("equipment_id", &item_id)],
+        Some(("plate.jpg", jpg)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{p3}");
+    assert_eq!(files(), 3);
+
+    // The type comes from the bytes, not the name.
+    let (status, _) = upload(
+        &app,
+        &[("spool_id", &spool_id)],
+        Some(("evil.png", b"<svg onload=alert(1)>")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = upload(&app, &[("spool_id", &spool_id)], None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = upload(&app, &[], Some(("a.png", png))).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = upload(
+        &app,
+        &[("spool_id", &spool_id), ("equipment_id", &item_id)],
+        Some(("a.png", png)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = upload(&app, &[("spool_id", "not-an-id")], Some(("a.png", png))).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let missing = uuid::Uuid::now_v7().to_string();
+    let (status, _) = upload(&app, &[("equipment_id", &missing)], Some(("a.png", png))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(files(), 3, "rejected uploads leave no files");
+
+    // Listing needs exactly one owner.
+    let (status, list) = call(
+        &app,
+        Method::GET,
+        &format!("/photos?spool_id={spool_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(list.as_array().unwrap().len(), 1);
+    assert_eq!(list[0]["id"], p1_id.as_str());
+    let (_, list) = call(
+        &app,
+        Method::GET,
+        &format!("/photos?filament_id={filament_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(list.as_array().unwrap().len(), 1);
+    let (status, _) = call(&app, Method::GET, "/photos", None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // The file itself, with headers that keep it an image.
+    let req = Request::builder()
+        .uri(format!("/photos/{p1_id}/file"))
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let h = resp.headers();
+    assert_eq!(h["content-type"], "image/png");
+    assert_eq!(h["x-content-type-options"], "nosniff");
+    assert!(
+        h["content-security-policy"]
+            .to_str()
+            .unwrap()
+            .contains("sandbox")
+    );
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..], png);
+
+    // Captions can be changed and cleared.
+    let (status, p) = call(
+        &app,
+        Method::PATCH,
+        &format!("/photos/{p1_id}"),
+        Some(json!({ "caption": "Opened" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(p["caption"], "Opened");
+    let (_, p) = call(
+        &app,
+        Method::PATCH,
+        &format!("/photos/{p1_id}"),
+        Some(json!({ "caption": "  " })),
+    )
+    .await;
+    assert_eq!(p["caption"], Value::Null);
+
+    // Deleting a photo removes its file.
+    let (status, _) = call(&app, Method::DELETE, &format!("/photos/{p1_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(files(), 2);
+    let (status, _) = call(&app, Method::GET, &format!("/photos/{p1_id}"), None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // The first photo is the equipment card's picture.
+    let (_, e) = call(&app, Method::GET, &format!("/equipment/{item_id}"), None).await;
+    assert_eq!(e["photo_url"], p3["url"]);
+
+    // Deleting equipment takes its photos and their files with it.
+    let (status, _) = call(&app, Method::DELETE, &format!("/equipment/{item_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(files(), 1);
+    let (_, list) = call(
+        &app,
+        Method::GET,
+        &format!("/photos?equipment_id={item_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(list.as_array().unwrap().len(), 0);
+
+    // The startup sweep removes stray files the app wrote, and nothing else.
+    std::fs::write(dir.join(format!("{}.png", uuid::Uuid::now_v7())), png).unwrap();
+    std::fs::write(dir.join("keep-me.txt"), b"not ours").unwrap();
+    let removed = rollcall::repo::photos::remove_orphan_files(&pool, &dir)
+        .await
+        .unwrap();
+    assert_eq!(removed, 1);
+    assert!(dir.join("keep-me.txt").exists());
+    assert_eq!(files(), 2);
+    std::fs::remove_dir_all(&dir).unwrap();
 }

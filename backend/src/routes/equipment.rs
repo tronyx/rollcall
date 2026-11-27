@@ -1,8 +1,8 @@
 use crate::{
     AppState,
     error::AppResult,
-    models::{Equipment, EquipmentFilter, SaveEquipment},
-    repo::equipment,
+    models::{Equipment, EquipmentFilter, PhotoOwner, SaveEquipment},
+    repo::{equipment, photos},
 };
 use axum::{
     Json, Router,
@@ -48,6 +48,12 @@ async fn update(
 }
 
 async fn remove(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
+    let owner = PhotoOwner {
+        equipment_id: Some(id),
+        ..Default::default()
+    };
+    let files = photos::file_names(&s.pool, &owner).await?;
     equipment::delete(&s.pool, id).await?;
+    photos::remove_files(&s.uploads, &files).await;
     Ok(StatusCode::NO_CONTENT)
 }

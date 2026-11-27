@@ -25,12 +25,17 @@ RUN apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && useradd --system --uid 10001 rollcall
+ && useradd --system --uid 10001 rollcall \
+ && mkdir -p /app/uploads \
+ && chown 10001 /app/uploads
 COPY --from=backend /usr/local/bin/rollcall /usr/local/bin/rollcall
 COPY --from=frontend /src/frontend/build /app/static
 ENV BIND_ADDR=0.0.0.0:8080 \
     STATIC_DIR=/app/static \
+    UPLOAD_DIR=/app/uploads \
     RUST_LOG=rollcall=info,tower_http=info
+# Your uploaded photos. Mount a volume here so they outlive the container.
+VOLUME /app/uploads
 USER 10001
 EXPOSE 8080
 CMD ["rollcall"]

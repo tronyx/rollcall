@@ -36,3 +36,6 @@ backend/.env
 .DS_Store
 .idea/
 .vscode/
+
+# Uploaded photos (default UPLOAD_DIR)
+backend/uploads/

@@ -28,6 +28,8 @@ pub struct Equipment {
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    /// The first photo, for the card: `/api/photos/{id}/file`.
+    pub photo_url: Option<String>,
 }
 
 /// `POST /api/equipment` and `PUT /api/equipment/{id}`. The brand is given by

@@ -1,8 +1,13 @@
 use crate::{
     AppState,
     error::AppResult,
-    models::{CreateSpool, SpoolFilter, SpoolView, UpdateSpool, WeightAdjustment, WeightEvent},
-    repo::spools::{self, WeightChange},
+    models::{
+        CreateSpool, PhotoOwner, SpoolFilter, SpoolView, UpdateSpool, WeightAdjustment, WeightEvent,
+    },
+    repo::{
+        photos,
+        spools::{self, WeightChange},
+    },
 };
 use axum::{
     Json, Router,
@@ -51,7 +56,13 @@ async fn update(
 }
 
 async fn remove(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
+    let owner = PhotoOwner {
+        spool_id: Some(id),
+        ..Default::default()
+    };
+    let files = photos::file_names(&s.pool, &owner).await?;
     spools::delete_spool(&s.pool, id).await?;
+    photos::remove_files(&s.uploads, &files).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

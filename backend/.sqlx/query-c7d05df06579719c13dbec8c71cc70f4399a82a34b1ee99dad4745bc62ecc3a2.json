@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, spool_id, filament_id, equipment_id, content_type, size_bytes,\n               original_name, caption, created_at,\n               '/api/photos/' || id || '/file' AS \"url!\"\n        FROM photos\n        WHERE spool_id = $1 OR filament_id = $2 OR equipment_id = $3\n        ORDER BY created_at, id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "spool_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "filament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "equipment_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "size_bytes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "original_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "caption",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "url!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "c7d05df06579719c13dbec8c71cc70f4399a82a34b1ee99dad4745bc62ecc3a2"
+}

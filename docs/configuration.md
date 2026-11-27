@@ -9,6 +9,7 @@ All settings are environment variables. For development, copy [`.env.example`](.
 | `DATABASE_URL` | required | PostgreSQL connection string |
 | `BIND_ADDR` | `0.0.0.0:8080` | Listen address |
 | `STATIC_DIR` | unset (`/app/static` in the image) | Serve the built frontend from this folder |
+| `UPLOAD_DIR` | `uploads` (`/app/uploads` in the image) | Where uploaded photos are saved. Created if it's missing |
 | `CORS_ORIGIN` | unset | An extra allowed origin, for calling the API from another site |
 | `RUST_LOG` | `rollcall=info,tower_http=info` in the image | Log levels |
 | `SCRAPER_TIMEOUT_SECS` | `12` | How long the link parser waits for a page |
