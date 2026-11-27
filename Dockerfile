@@ -1,5 +1,5 @@
 # Builds one image with the API server and the compiled frontend.
-# Build from the repo root: docker build -f docker/Dockerfile -t rollcall .
+# Build from the repo root: docker build -t rollcall .
 
 # ---- Frontend ----
 FROM node:22-bookworm-slim AS frontend
@@ -28,6 +28,6 @@ COPY --from=frontend /src/frontend/build /app/static
 ENV BIND_ADDR=0.0.0.0:8080 \
     STATIC_DIR=/app/static \
     RUST_LOG=rollcall=info,tower_http=info
-USER rollcall
+USER 10001
 EXPOSE 8080
 CMD ["rollcall"]

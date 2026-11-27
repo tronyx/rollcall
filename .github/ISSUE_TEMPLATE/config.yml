@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Read the guide
+    url: https://github.com/tronyx/rollcall/blob/master/docs/README.md
+    about: Installation, configuration, Docker, how the link parser works, and troubleshooting.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/tronyx/rollcall/security/advisories/new
+    about: Privately, so it can be fixed before it's public. Please don't open an issue for it.

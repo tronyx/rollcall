@@ -1,0 +1,7 @@
+# Settings for hadolint, which CI runs on the Dockerfile.
+ignored:
+  # "Pin versions in apt get install": left unpinned on purpose. Debian
+  # removes a package's old version when it releases a fix, so pinned
+  # versions would break the build at the next update, and unpinned ones are
+  # how the weekly rebuild picks up security fixes.
+  - DL3008
