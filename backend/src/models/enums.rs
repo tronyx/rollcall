@@ -43,3 +43,14 @@ pub enum SpecSource {
     Scraped,
     Llm,
 }
+
+/// How a spool (or a piece of equipment) was acquired.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "acquisition_kind", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum AcquisitionKind {
+    #[default]
+    Bought,
+    Gift,
+    Other,
+}

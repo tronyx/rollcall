@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AcquisitionFields from '#lib/components/AcquisitionFields.svelte';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type { Location, Spool, SpoolStatus } from '#lib/api/types.ts';
 	import { fromLocalInput, toLocalInput } from '#lib/util/format.ts';
@@ -28,6 +29,9 @@
 		currency: start.currency,
 		purchase_date: start.purchase_date ?? '',
 		vendor: start.vendor ?? '',
+		acquisition: start.acquisition,
+		discounted: start.discounted,
+		discount_note: start.discount_note ?? '',
 		lot_number: start.lot_number ?? '',
 		last_dried_at: toLocalInput(start.last_dried_at),
 		notes: start.notes ?? ''
@@ -61,6 +65,9 @@
 				currency: form.currency.trim() || 'USD',
 				purchase_date: form.purchase_date || null,
 				vendor: blank(form.vendor),
+				acquisition: form.acquisition,
+				discounted: form.discounted,
+				discount_note: form.discounted ? blank(form.discount_note) : null,
 				lot_number: blank(form.lot_number),
 				last_dried_at: fromLocalInput(form.last_dried_at),
 				notes: blank(form.notes)
@@ -100,21 +107,19 @@
 		<span class={label}>Empty spool weight (g)</span>
 		<input type="number" min="0" step="0.1" bind:value={form.tare_weight_g} class={input} />
 	</label>
-	<label>
-		<span class={label}>Price</span>
-		<input type="number" min="0" step="0.01" bind:value={form.purchase_price} class={input} />
-	</label>
+	<AcquisitionFields
+		bind:acquisition={form.acquisition}
+		bind:date={form.purchase_date}
+		bind:from={form.vendor}
+		bind:price={form.purchase_price}
+		bind:discounted={form.discounted}
+		bind:discountNote={form.discount_note}
+		{input}
+		{label}
+	/>
 	<label>
 		<span class={label}>Currency</span>
 		<input type="text" maxlength="3" bind:value={form.currency} class="{input} uppercase" />
-	</label>
-	<label>
-		<span class={label}>Purchased</span>
-		<input type="date" bind:value={form.purchase_date} class={input} />
-	</label>
-	<label>
-		<span class={label}>Vendor</span>
-		<input type="text" bind:value={form.vendor} class={input} />
 	</label>
 	<label>
 		<span class={label}>Label code</span>

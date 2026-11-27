@@ -78,3 +78,26 @@ export function toLocalInput(iso: string | null): string {
 export function fromLocalInput(value: string): string | null {
 	return value ? new Date(value).toISOString() : null;
 }
+
+/** "Bought Nov 27, 2026 from Micro Center", "Gift from Sam", or null if nothing is known. */
+export function acquiredLine(x: {
+	acquisition: 'bought' | 'gift' | 'other';
+	purchase_date: string | null;
+	vendor: string | null;
+}): string | null {
+	if (!x.purchase_date && !x.vendor && x.acquisition === 'bought') return null;
+	const verb = { bought: 'Bought', gift: 'Gift', other: 'Acquired' }[x.acquisition];
+	return [verb, x.purchase_date && dateOnly(x.purchase_date), x.vendor && `from ${x.vendor}`]
+		.filter(Boolean)
+		.join(' ');
+}
+
+/** The site a product link points at, as a store name: "amazon.com". */
+export function storeName(url: string | null | undefined): string {
+	if (!url) return '';
+	try {
+		return new URL(url).hostname.replace(/^www\./, '');
+	} catch {
+		return '';
+	}
+}

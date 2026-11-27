@@ -4,6 +4,7 @@ export type SpoolStatus = 'sealed' | 'active' | 'drying' | 'empty' | 'archived';
 export type WeightEventKind = 'initial' | 'print' | 'quick_adjust' | 'weigh_in' | 'correction';
 export type LocationKind = 'dry_box' | 'ams_slot' | 'printer' | 'dryer' | 'shelf' | 'other';
 export type SpecSource = 'manual' | 'scraped' | 'llm';
+export type AcquisitionKind = 'bought' | 'gift' | 'other';
 
 export interface Spool {
 	id: string;
@@ -18,6 +19,9 @@ export interface Spool {
 	currency: string;
 	purchase_date: string | null;
 	vendor: string | null;
+	acquisition: AcquisitionKind;
+	discounted: boolean;
+	discount_note: string | null;
 	lot_number: string | null;
 	opened_at: string | null;
 	last_dried_at: string | null;
@@ -130,6 +134,9 @@ export interface UpdateSpool {
 	currency: string;
 	purchase_date: string | null;
 	vendor: string | null;
+	acquisition: AcquisitionKind;
+	discounted: boolean;
+	discount_note: string | null;
 	lot_number: string | null;
 	last_dried_at: string | null;
 	notes: string | null;
@@ -148,6 +155,9 @@ export interface CreateSpool {
 	currency?: string | null;
 	purchase_date?: string | null;
 	vendor?: string | null;
+	acquisition?: AcquisitionKind;
+	discounted?: boolean;
+	discount_note?: string | null;
 	notes?: string | null;
 }
 

@@ -7,8 +7,11 @@
 		ParseDraft,
 		ParseResult,
 		Spool,
-		SpoolStatus
+		SpoolStatus,
+		AcquisitionKind
 	} from '#lib/api/types.ts';
+	import AcquisitionFields from './AcquisitionFields.svelte';
+	import { storeName } from '#lib/util/format.ts';
 	import ColorSwatch from './ColorSwatch.svelte';
 
 	let {
@@ -44,6 +47,10 @@
 		tare_weight_g: number | null;
 		purchase_price: number | null;
 		purchase_date: string;
+		vendor: string;
+		acquisition: AcquisitionKind;
+		discounted: boolean;
+		discount_note: string;
 		location_id: string;
 		status: SpoolStatus;
 		label_code: string;
@@ -72,6 +79,10 @@
 		tare_weight_g: null,
 		purchase_price: null,
 		purchase_date: today(),
+		vendor: '',
+		acquisition: 'bought',
+		discounted: false,
+		discount_note: '',
 		location_id: '',
 		status: 'sealed',
 		label_code: '',
@@ -124,7 +135,7 @@
 		try {
 			const res = await api.parseUrl(url.trim());
 			parsed = res;
-			applyDraft(res.draft);
+			applyDraft(res.draft, res.final_url);
 			step = 'review';
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Could not read that page.';
@@ -133,7 +144,7 @@
 		}
 	}
 
-	function applyDraft(d: ParseDraft) {
+	function applyDraft(d: ParseDraft, finalUrl: string | null) {
 		const f = emptyForm();
 		form = {
 			...f,
@@ -157,7 +168,9 @@
 				d.drying_time_min != null ? Math.round((d.drying_time_min / 60) * 10) / 10 : null,
 			image_url: d.image_url ?? '',
 			initial_weight_g: d.nominal_weight_g ?? 1000,
-			purchase_price: d.price
+			purchase_price: d.price,
+			// Where the link came from, such as "amazon.com".
+			vendor: storeName(finalUrl)
 		};
 		hexTouched = !!d.color_hex;
 	}
@@ -212,6 +225,10 @@
 				purchase_price: num(form.purchase_price),
 				currency: parsed?.draft.currency ?? null,
 				purchase_date: form.purchase_date || null,
+				vendor: text(form.vendor),
+				acquisition: form.acquisition,
+				discounted: form.discounted,
+				discount_note: form.discounted ? text(form.discount_note) : null,
 				location_id: form.location_id || null,
 				status: form.status,
 				label_code: text(form.label_code),
@@ -500,21 +517,16 @@
 						class={input}
 					/>
 				</label>
-				<label>
-					<span class={label}>Price</span>
-					<input
-						type="number"
-						inputmode="decimal"
-						min="0"
-						step="0.01"
-						bind:value={form.purchase_price}
-						class={input}
-					/>
-				</label>
-				<label>
-					<span class={label}>Purchased</span>
-					<input type="date" bind:value={form.purchase_date} class={input} />
-				</label>
+				<AcquisitionFields
+					bind:acquisition={form.acquisition}
+					bind:date={form.purchase_date}
+					bind:from={form.vendor}
+					bind:price={form.purchase_price}
+					bind:discounted={form.discounted}
+					bind:discountNote={form.discount_note}
+					{input}
+					{label}
+				/>
 				<label>
 					<span class={label}>Status</span>
 					<select bind:value={form.status} class={input}>
