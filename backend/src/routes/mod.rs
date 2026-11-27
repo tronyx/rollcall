@@ -13,6 +13,7 @@ mod lookups;
 mod settings;
 mod spools;
 mod stats;
+mod tuned;
 
 /// API routes only; used by `router` and by integration tests.
 pub fn api(state: AppState) -> Router {
@@ -23,6 +24,7 @@ pub fn api(state: AppState) -> Router {
         .merge(lookups::routes())
         .merge(stats::routes())
         .merge(settings::routes())
+        .merge(tuned::routes())
         .with_state(state)
 }
 
