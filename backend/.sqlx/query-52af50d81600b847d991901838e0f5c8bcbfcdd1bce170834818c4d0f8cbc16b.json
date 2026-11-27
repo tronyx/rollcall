@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE spools SET\n            remaining_weight_g = $2,\n            status     = $3::spool_status,\n            opened_at  = CASE WHEN $3::spool_status IN ('active', 'drying', 'empty')\n                              THEN coalesce(opened_at, now()) ELSE opened_at END,\n            emptied_at = CASE WHEN $3::spool_status = 'empty' THEN coalesce(emptied_at, now()) END\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Numeric",
+        {
+          "Custom": {
+            "name": "spool_status",
+            "kind": {
+              "Enum": [
+                "sealed",
+                "active",
+                "drying",
+                "empty",
+                "archived"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "52af50d81600b847d991901838e0f5c8bcbfcdd1bce170834818c4d0f8cbc16b"
+}

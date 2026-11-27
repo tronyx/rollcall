@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO spool_weight_events (spool_id, kind, delta_g, weight_after_g)\n        VALUES ($1, 'initial', $2, $2)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a0dd1e870633cd1630c774215e418c029fad0ae541a58687cee6f785d3eb5da6"
+}

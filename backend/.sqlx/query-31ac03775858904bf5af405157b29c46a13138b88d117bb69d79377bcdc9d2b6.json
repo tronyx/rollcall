@@ -1,0 +1,195 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT f.id, f.brand_id, b.name AS brand_name, f.material_id, m.code AS material_code,\n               f.product_name, f.color_name, f.color_hex, f.color_hex_secondary, f.diameter_mm,\n               f.nominal_weight_g, f.typical_tare_g,\n               f.nozzle_temp_min_c, f.nozzle_temp_max_c, f.bed_temp_min_c, f.bed_temp_max_c,\n               f.print_speed_min_mm_s, f.print_speed_max_mm_s, f.drying_temp_c, f.drying_time_min,\n               f.density_g_cm3, f.td_value, f.source_url, f.image_url,\n               f.spec_source AS \"spec_source: SpecSource\", f.scraped_at, f.created_at, f.updated_at\n        FROM filaments f\n        JOIN brands b    ON b.id = f.brand_id\n        JOIN materials m ON m.id = f.material_id\n        WHERE ($1::uuid IS NULL OR f.id = $1)\n        ORDER BY lower(b.name), m.code, lower(f.color_name)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "brand_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "material_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "material_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "product_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "color_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "color_hex",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "color_hex_secondary",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "diameter_mm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "nominal_weight_g",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 11,
+        "name": "typical_tare_g",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 12,
+        "name": "nozzle_temp_min_c",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 13,
+        "name": "nozzle_temp_max_c",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 14,
+        "name": "bed_temp_min_c",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 15,
+        "name": "bed_temp_max_c",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 16,
+        "name": "print_speed_min_mm_s",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 17,
+        "name": "print_speed_max_mm_s",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 18,
+        "name": "drying_temp_c",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 19,
+        "name": "drying_time_min",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
+        "name": "density_g_cm3",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 21,
+        "name": "td_value",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 22,
+        "name": "source_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 23,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 24,
+        "name": "spec_source: SpecSource",
+        "type_info": {
+          "Custom": {
+            "name": "spec_source",
+            "kind": {
+              "Enum": [
+                "manual",
+                "scraped",
+                "llm"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "scraped_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 26,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 27,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "31ac03775858904bf5af405157b29c46a13138b88d117bb69d79377bcdc9d2b6"
+}

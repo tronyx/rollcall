@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, name, kind AS \"kind: LocationKind\", description, sort_order\n        FROM locations\n        ORDER BY sort_order, lower(name)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "kind: LocationKind",
+        "type_info": {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "sort_order",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "9826ce08fc7222648201d14d4e71c3aa1fe359600721e953e2d821b4de2ce4f5"
+}

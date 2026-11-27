@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO spools (\n            filament_id, label_code, location_id, status, initial_weight_g, remaining_weight_g,\n            tare_weight_g, purchase_price, currency, purchase_date, vendor, lot_number, notes,\n            opened_at, emptied_at\n        ) VALUES (\n            $1, $2, $3, $4::spool_status, $5, $6, $7, $8,\n            coalesce($9, (SELECT default_currency FROM app_settings)),\n            $10, $11, $12, $13,\n            CASE WHEN $4::spool_status IN ('active', 'drying') THEN now() END,\n            CASE WHEN $4::spool_status = 'empty' THEN now() END\n        )\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "spool_status",
+            "kind": {
+              "Enum": [
+                "sealed",
+                "active",
+                "drying",
+                "empty",
+                "archived"
+              ]
+            }
+          }
+        },
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Bpchar",
+        "Date",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3ca3033b69a4593cc2c0f27eeeb2dc40e5e6166c2c0f6a244a87fc039b58e441"
+}

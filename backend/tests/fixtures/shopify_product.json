@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "title": "PolyTerra™ PLA",
+  "vendor": "Polymaker",
+  "description": "<p>Matte finish PLA.</p><ul><li>Nozzle Temperature: 190-230°C</li><li>Bed Temperature: 25-60°C</li><li>Print speed: 30-150 mm/s</li><li>Drying: 55°C for 6h</li></ul>",
+  "featured_image": "//cdn.shopify.com/main.jpg",
+  "options": [{"name": "Size"}, {"name": "Color"}],
+  "variants": [
+    {"id": 111, "title": "1kg / Charcoal Black", "price": 2299, "option1": "1kg", "option2": "Charcoal Black"},
+    {"id": 222, "title": "1kg / Fossil Grey", "price": 2299, "option1": "1kg", "option2": "Fossil Grey",
+     "featured_image": {"src": "https://cdn.shopify.com/grey.jpg"}}
+  ]
+}

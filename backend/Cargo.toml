@@ -1,0 +1,61 @@
+[package]
+name = "rollcall"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Self-hosted 3D printer filament inventory"
+license = "GPL-3.0-only"
+publish = false
+
+[dependencies]
+# Web
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "fs", "compression-gzip"] }
+
+# Database
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "macros",
+    "migrate",
+    "uuid",
+    "chrono",
+    "rust_decimal",
+    "json",
+] }
+
+# Data
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+rust_decimal = { version = "1", features = ["serde-float"] }
+
+# Scraper
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "gzip",
+    "brotli",
+    "json",
+] }
+scraper = "0.22"
+regex = "1"
+url = "2"
+
+# Plumbing
+thiserror = "2"
+anyhow = "1"
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+rust_decimal_macros = "1"
+
+[profile.release]
+lto = "thin"
+strip = true

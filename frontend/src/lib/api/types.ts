@@ -1,0 +1,193 @@
+// Mirrors the Rust DTOs in backend/src/models and backend/src/scraper.
+
+export type SpoolStatus = 'sealed' | 'active' | 'drying' | 'empty' | 'archived';
+export type WeightEventKind = 'initial' | 'print' | 'quick_adjust' | 'weigh_in' | 'correction';
+export type LocationKind = 'dry_box' | 'ams_slot' | 'printer' | 'dryer' | 'shelf' | 'other';
+export type SpecSource = 'manual' | 'scraped' | 'llm';
+
+export interface Spool {
+	id: string;
+	label_code: string | null;
+	status: SpoolStatus;
+	initial_weight_g: number;
+	remaining_weight_g: number;
+	tare_weight_g: number | null;
+	remaining_pct: number;
+	is_low_stock: boolean;
+	purchase_price: number | null;
+	currency: string;
+	purchase_date: string | null;
+	vendor: string | null;
+	lot_number: string | null;
+	opened_at: string | null;
+	last_dried_at: string | null;
+	emptied_at: string | null;
+	notes: string | null;
+	created_at: string;
+	updated_at: string;
+	filament_id: string;
+	product_name: string | null;
+	color_name: string;
+	color_hex: string | null;
+	color_hex_secondary: string | null;
+	diameter_mm: number;
+	image_url: string | null;
+	brand_id: string;
+	brand_name: string;
+	material_id: string;
+	material_code: string;
+	location_id: string | null;
+	location_name: string | null;
+	location_kind: LocationKind | null;
+}
+
+export interface SpoolFilter {
+	q?: string;
+	material?: string;
+	material_family?: string;
+	brand_id?: string;
+	location_id?: string;
+	status?: SpoolStatus;
+	color?: string;
+	low_stock?: boolean;
+	include_empty?: boolean;
+}
+
+export interface FilamentSpecs {
+	nozzle_temp_min_c: number | null;
+	nozzle_temp_max_c: number | null;
+	bed_temp_min_c: number | null;
+	bed_temp_max_c: number | null;
+	print_speed_min_mm_s: number | null;
+	print_speed_max_mm_s: number | null;
+	drying_temp_c: number | null;
+	drying_time_min: number | null;
+	density_g_cm3?: number | null;
+	td_value?: number | null;
+}
+
+export interface NewFilament extends FilamentSpecs {
+	brand_name: string;
+	material_code: string;
+	product_name: string | null;
+	color_name: string;
+	color_hex: string | null;
+	diameter_mm: number;
+	nominal_weight_g: number | null;
+	source_url: string | null;
+	image_url: string | null;
+	spec_source: SpecSource;
+	scrape_raw?: unknown;
+}
+
+export interface CreateSpool {
+	filament_id?: string;
+	filament?: NewFilament;
+	label_code?: string | null;
+	location_id?: string | null;
+	status?: SpoolStatus;
+	initial_weight_g: number;
+	remaining_weight_g?: number | null;
+	tare_weight_g?: number | null;
+	purchase_price?: number | null;
+	currency?: string | null;
+	purchase_date?: string | null;
+	vendor?: string | null;
+	notes?: string | null;
+}
+
+export interface WeightAdjustment {
+	kind: Exclude<WeightEventKind, 'initial'>;
+	delta_g?: number;
+	gross_reading_g?: number;
+	print_name?: string;
+	note?: string;
+}
+
+export interface WeightEvent {
+	id: number;
+	spool_id: string;
+	kind: WeightEventKind;
+	delta_g: number;
+	weight_after_g: number;
+	gross_reading_g: number | null;
+	print_name: string | null;
+	note: string | null;
+	created_at: string;
+}
+
+export interface WeightChange {
+	spool: Spool;
+	event: WeightEvent;
+}
+
+export interface InventoryStats {
+	spools_in_stock: number;
+	spools_sealed: number;
+	spools_active: number;
+	spools_drying: number;
+	spools_empty: number;
+	remaining_kg: number;
+	low_stock_count: number;
+	low_stock_threshold_g: number;
+}
+
+export interface Brand {
+	id: string;
+	name: string;
+	website: string | null;
+}
+
+export interface Material {
+	id: string;
+	code: string;
+	display_name: string;
+	family: string;
+	is_abrasive: boolean;
+}
+
+export interface Location {
+	id: string;
+	name: string;
+	kind: LocationKind;
+	description: string | null;
+	sort_order: number;
+}
+
+export type FieldSource =
+	| 'shopify_json'
+	| 'json_ld'
+	| 'site_adapter'
+	| 'spec_table'
+	| 'meta_tags'
+	| 'title'
+	| 'page_text'
+	| 'llm'
+	| 'url'
+	| 'derived';
+
+export interface ParseDraft extends FilamentSpecs {
+	title: string | null;
+	brand_name: string | null;
+	material_code: string | null;
+	product_name: string | null;
+	color_name: string | null;
+	color_hex: string | null;
+	image_url: string | null;
+	diameter_mm: number | null;
+	nominal_weight_g: number | null;
+	price: number | null;
+	currency: string | null;
+}
+
+export interface ParseResult {
+	url: string;
+	final_url: string | null;
+	fetched: boolean;
+	blocked: boolean;
+	complete: boolean;
+	draft: ParseDraft;
+	sources: Partial<Record<keyof ParseDraft, FieldSource>>;
+	missing: (keyof ParseDraft)[];
+	warnings: string[];
+}
