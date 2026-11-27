@@ -284,8 +284,10 @@
 			type="button"
 			onclick={close}
 			class="rounded-lg px-2 text-2xl leading-none text-slate-500"
-			aria-label="Close">×</button
+			aria-label="Close"
 		>
+			×
+		</button>
 	</div>
 
 	{#if step === 'url'}
@@ -316,8 +318,10 @@
 				<button
 					type="button"
 					class="rounded-lg px-4 py-2.5 font-medium text-slate-700 ring-1 ring-slate-300 dark:text-slate-200 dark:ring-slate-700"
-					onclick={() => (step = 'review')}>Enter manually</button
+					onclick={() => (step = 'review')}
 				>
+					Enter manually
+				</button>
 			</div>
 		</form>
 	{:else}
@@ -407,9 +411,9 @@
 							class="h-11 w-16 cursor-pointer rounded-lg bg-transparent"
 							aria-label="Pick swatch color"
 						/>
-						<span class="font-mono text-xs text-slate-500"
-							>{hexTouched ? form.color_hex.toUpperCase() : 'none'}</span
-						>
+						<span class="font-mono text-xs text-slate-500">
+							{hexTouched ? form.color_hex.toUpperCase() : 'none'}
+						</span>
 					</div>
 				</div>
 				<label>
@@ -544,8 +548,9 @@
 					type="button"
 					onclick={reset}
 					class="rounded-lg px-4 py-2.5 font-medium ring-1 ring-slate-300 dark:ring-slate-700"
-					>Back</button
 				>
+					Back
+				</button>
 				<button
 					type="submit"
 					disabled={saving}

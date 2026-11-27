@@ -141,13 +141,15 @@
 			type="button"
 			onclick={onCancel}
 			class="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-700"
-			>Cancel</button
 		>
+			Cancel
+		</button>
 		<button
 			type="submit"
 			disabled={saving}
 			class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-			>{saving ? 'Saving…' : 'Save'}</button
 		>
+			{saving ? 'Saving…' : 'Save'}
+		</button>
 	</div>
 </form>

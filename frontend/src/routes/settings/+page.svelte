@@ -62,8 +62,10 @@
 <nav class="mb-4">
 	<a
 		href={resolve('/')}
-		class="text-sm font-medium text-orange-700 hover:underline dark:text-orange-400">← All spools</a
+		class="text-sm font-medium text-orange-700 hover:underline dark:text-orange-400"
 	>
+		← All spools
+	</a>
 </nav>
 <h1 class="mb-4 text-xl font-bold tracking-tight">Settings</h1>
 
@@ -104,11 +106,12 @@
 					type="submit"
 					disabled={saving}
 					class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-					>{saving ? 'Saving…' : 'Save'}</button
 				>
-				{#if saved}<span class="py-2 text-sm text-emerald-700 dark:text-emerald-400" role="status"
-						>Saved.</span
-					>{/if}
+					{saving ? 'Saving…' : 'Save'}
+				</button>
+				{#if saved}<span class="py-2 text-sm text-emerald-700 dark:text-emerald-400" role="status">
+						Saved.
+					</span>{/if}
 			</form>
 			<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
 				The currency is used for new spools that don't name one.

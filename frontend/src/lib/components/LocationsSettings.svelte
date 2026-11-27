@@ -120,14 +120,16 @@
 				type="button"
 				onclick={() => (editingId = null)}
 				class="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-700"
-				>Cancel</button
 			>
+				Cancel
+			</button>
 			<button
 				type="submit"
 				disabled={busy}
 				class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-				>{editingId === 'new' ? 'Add' : 'Save'}</button
 			>
+				{editingId === 'new' ? 'Add' : 'Save'}
+			</button>
 		</div>
 	</form>
 {/snippet}
@@ -161,15 +163,17 @@
 						</p>
 					</div>
 					{#if confirmId === l.id}
-						<span class="text-xs text-slate-600 dark:text-slate-300"
-							>Spools here lose their location.</span
-						>
+						<span class="text-xs text-slate-600 dark:text-slate-300">
+							Spools here lose their location.
+						</span>
 						<button
 							type="button"
 							class="text-sm font-semibold text-red-600"
 							disabled={busy}
-							onclick={() => remove(l.id)}>Delete</button
+							onclick={() => remove(l.id)}
 						>
+							Delete
+						</button>
 						<button type="button" class="text-sm" onclick={() => (confirmId = null)}>Cancel</button>
 					{:else}
 						<button type="button" class={link} onclick={() => startEdit(l)}>Edit</button>
@@ -177,8 +181,10 @@
 							type="button"
 							class="text-sm text-slate-500 hover:text-red-600"
 							aria-label="Delete {l.name}"
-							onclick={() => (confirmId = l.id)}>Delete</button
+							onclick={() => (confirmId = l.id)}
 						>
+							Delete
+						</button>
 					{/if}
 				</div>
 			{/if}

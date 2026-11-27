@@ -80,14 +80,16 @@
 		<a
 			href={resolve('/settings')}
 			class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
-			>⚙️ Settings</a
 		>
+			⚙️ Settings
+		</a>
 		<button
 			type="button"
 			onclick={() => (addOpen = true)}
 			class="hidden rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 sm:block"
-			>+ Add spool</button
 		>
+			+ Add spool
+		</button>
 	</div>
 </header>
 
@@ -131,7 +133,9 @@
 	type="button"
 	onclick={() => (addOpen = true)}
 	class="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] rounded-full bg-orange-600 px-5 py-3.5 font-semibold text-white shadow-lg sm:hidden"
-	aria-label="Add spool">+ Add spool</button
+	aria-label="Add spool"
 >
+	+ Add spool
+</button>
 
 <AddSpoolModal bind:open={addOpen} {materials} {locations} {onCreated} />

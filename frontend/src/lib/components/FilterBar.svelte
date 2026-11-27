@@ -70,8 +70,10 @@
 			<button
 				type="button"
 				class="font-medium text-orange-700 hover:underline dark:text-orange-400"
-				onclick={() => (filter = { include_empty: filter.include_empty })}>Clear filters</button
+				onclick={() => (filter = { include_empty: filter.include_empty })}
 			>
+				Clear filters
+			</button>
 		{/if}
 	</div>
 </div>
