@@ -43,7 +43,7 @@ def page_name(path):
 def wiki_target(target, docs, blob):
     """target, a link in a page in the folder docs (relative to the
     repository's root), as the wiki needs it; blob is the URL files are
-    linked at, e.g. "https://github.com/<owner>/<repo>/blob/master/"."""
+    linked at, e.g. "https://github.com/<owner>/<repo>/blob/main/"."""
     if target.startswith("#") or re.match(r"^[a-z][a-z+.-]*:", target):
         return target
     path, hash_, anchor = target.partition("#")

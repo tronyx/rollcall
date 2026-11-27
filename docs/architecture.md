@@ -45,7 +45,7 @@ rollcall/
 │   ├── workflows/
 │   │   ├── tests.yml            # lint, backend, frontend, Docker image (amd64 + arm64), publish
 │   │   ├── scan.yml             # midweek Trivy scan of the published images
-│   │   ├── sync-develop.yml     # fast-forwards develop after a merge into master
+│   │   ├── sync-develop.yml     # fast-forwards develop after a merge into main
 │   │   ├── sync-wiki.yml        # copies docs/ to the wiki on release
 │   │   └── dockerhub-description.yml
 │   ├── scripts/docs_to_wiki.py

@@ -2,7 +2,7 @@
 
 The notable changes to Rollcall, newest first.
 
-The project doesn't use version numbers. Each entry is one merge into `master`, which always has the latest release, and links to its pull request for the full details. Changes waiting on `develop` are listed under **Unreleased**.
+The project doesn't use version numbers. Each entry is one merge into `main`, which always has the latest release, and links to its pull request for the full details. Changes waiting on `develop` are listed under **Unreleased**.
 
 ## Unreleased
 
@@ -20,4 +20,4 @@ The project doesn't use version numbers. Each entry is one merge into `master`, 
 - Added a code of conduct, a contributing guide, a security policy, issue forms, a pull request template, and GitHub Sponsors.
 - One `tests.yml` workflow lints the workflows, the Dockerfile, and the documentation, tests the backend and the frontend, builds and smoke-tests the image on both architectures, scans it with Trivy, and publishes it. A midweek scan checks the published images again.
 - Dependabot keeps the actions, the base images, the crates, and the npm packages up to date, with pull requests into `develop`.
-- `docs/` is copied to the wiki on each release, and `develop` is fast-forwarded after each merge into `master`.
+- `docs/` is copied to the wiki on each release, and `develop` is fast-forwarded after each merge into `main`.

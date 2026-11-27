@@ -2,7 +2,7 @@
 
 ## ✅ Supported versions
 
-The project doesn't use version numbers. Only the latest release is supported: the `master` branch, and the `latest` Docker image on Docker Hub (`tronyx/rollcall`) and GitHub (`ghcr.io/tronyx/rollcall`). Fixes aren't made to older copies, so update to the latest before reporting (`git pull`, or `docker compose pull`).
+The project doesn't use version numbers. Only the latest release is supported: the `main` branch, and the `latest` Docker image on Docker Hub (`tronyx/rollcall`) and GitHub (`ghcr.io/tronyx/rollcall`). Fixes aren't made to older copies, so update to the latest before reporting (`git pull`, or `docker compose pull`).
 
 The `develop` branch and image are the next release in progress. A vulnerability there is welcome too, since fixing it early keeps it out of the next release.
 

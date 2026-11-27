@@ -38,6 +38,6 @@ Prettier, `svelte-check` (TypeScript), Vitest unit tests for the formatting help
 | Backend | rustfmt, clippy, and the tests against a PostgreSQL 18 service |
 | Frontend | The checks above |
 | Docker image | Builds the image on `amd64` and `arm64`, starts it next to PostgreSQL 18, checks the API, the web interface, and saving a spool, and scans it with Trivy |
-| Publish | On `develop` and `master` only: tags the tested images (see [Docker](docker.md)) |
+| Publish | On `develop` and `main` only: tags the tested images (see [Docker](docker.md)) |
 
 It also runs each Monday, so a new base image or dependency that breaks the build shows up without a push.

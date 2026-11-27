@@ -7,7 +7,7 @@ on:
   # even without a push, and the image picks up Debian's security fixes.
   # GitHub only runs this on the default branch, develop, from its copy of
   # this file, and pauses it after 60 days without repository activity.
-  # master is rebuilt afterwards (see rebuild-latest).
+  # main is rebuilt afterwards (see rebuild-latest).
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
@@ -145,7 +145,7 @@ jobs:
       PUBLISH: >-
         ${{ github.repository == 'tronyx/rollcall'
         && github.event_name != 'pull_request'
-        && (github.ref_name == 'master' || github.ref_name == 'develop') }}
+        && (github.ref_name == 'main' || github.ref_name == 'develop') }}
       # GHCR needs nothing but the workflow's own token. Docker Hub is added
       # once its secrets exist (see publish), so a missing secret never
       # holds up the GHCR image.
@@ -249,7 +249,7 @@ jobs:
           retention-days: 1
 
   # Publishes the tested images to Docker Hub and the GitHub Container
-  # Registry, once every other job has passed: master as "latest", develop as
+  # Registry, once every other job has passed: main as "latest", develop as
   # "develop", each covering amd64 and arm64. Nothing is built here; it only
   # tags the digests the docker jobs pushed. Pull requests never publish.
   #
@@ -263,7 +263,7 @@ jobs:
     if: >-
       github.repository == 'tronyx/rollcall'
       && github.event_name != 'pull_request'
-      && (github.ref_name == 'master' || github.ref_name == 'develop')
+      && (github.ref_name == 'main' || github.ref_name == 'develop')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -295,7 +295,7 @@ jobs:
       - name: Tag the tested images
         working-directory: ${{ runner.temp }}/digests
         env:
-          TAG: ${{ github.ref_name == 'master' && 'latest' || 'develop' }}
+          TAG: ${{ github.ref_name == 'main' && 'latest' || 'develop' }}
           SOURCE: https://github.com/${{ github.repository }}
           REVISION: ${{ github.sha }}
         run: |
@@ -315,17 +315,17 @@ jobs:
           done
 
   # The weekly run only tests and rebuilds develop. Once all of it has passed,
-  # this starts the workflow on master, from master's own copy of this file,
-  # so "latest" is rebuilt and retested too. Nothing is pushed to master: a
+  # this starts the workflow on main, from main's own copy of this file,
+  # so "latest" is rebuilt and retested too. Nothing is pushed to main: a
   # started run needs no commit. If develop's run fails, latest waits a week.
   rebuild-latest:
-    name: Rebuild latest from master
+    name: Rebuild latest from main
     needs: publish
     if: github.event_name == 'schedule' && github.ref_name == 'develop'
     runs-on: ubuntu-latest
     permissions:
       actions: write
     steps:
-      - run: gh workflow run tests.yml --repo "$GITHUB_REPOSITORY" --ref master
+      - run: gh workflow run tests.yml --repo "$GITHUB_REPOSITORY" --ref main
         env:
           GH_TOKEN: ${{ github.token }}

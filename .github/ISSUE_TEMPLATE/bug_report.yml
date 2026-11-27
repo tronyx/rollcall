@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report this! Many surprises are explained in the [Troubleshooting](https://github.com/tronyx/rollcall/blob/master/docs/troubleshooting.md) guide, so please check there first.
+        Thanks for taking the time to report this! Many surprises are explained in the [Troubleshooting](https://github.com/tronyx/rollcall/blob/main/docs/troubleshooting.md) guide, so please check there first.
 
         Found a security vulnerability? Please don't report it here; see the [security policy](https://github.com/tronyx/rollcall/security/policy) instead.
 
@@ -16,7 +16,7 @@ body:
       options:
         - label: I've searched the existing issues and this hasn't been reported yet.
           required: true
-        - label: I'm using the latest version, from the `master` branch or the `latest` Docker image.
+        - label: I'm using the latest version, from the `main` branch or the `latest` Docker image.
           required: true
 
   - type: textarea

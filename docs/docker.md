@@ -9,7 +9,7 @@ The image contains the Rollcall server and the built web interface. It runs on `
 | GitHub | `ghcr.io/tronyx/rollcall` |
 | Docker Hub | `tronyx/rollcall` (once it is set up) |
 
-The `develop` tag comes from the `develop` branch. The `latest` tag will come from `master` once there is a release. Each week, a new build picks up Debian's security fixes. Before an image is published, it is started next to PostgreSQL 18 and tested, and [Trivy](https://trivy.dev) scans it for known vulnerabilities. An image with a critical vulnerability that has a fix is not published.
+The `develop` tag comes from the `develop` branch. The `latest` tag will come from `main` once there is a release. Each week, a new build picks up Debian's security fixes. Before an image is published, it is started next to PostgreSQL 18 and tested, and [Trivy](https://trivy.dev) scans it for known vulnerabilities. An image with a critical vulnerability that has a fix is not published.
 
 ## 🔄 Updating
 
