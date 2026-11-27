@@ -26,7 +26,7 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 
 ### 🐳 With Docker
 
-The image is on GitHub as `ghcr.io/tronyx/rollcall`. [Installation](docs/installation.md#-with-docker-compose) has a complete `docker-compose.yml` with the database. Then:
+The image is on Docker Hub as `tronyx/rollcall` and on GitHub as `ghcr.io/tronyx/rollcall`, for `amd64` and `arm64`. [Installation](docs/installation.md#-with-docker-compose) has a complete `docker-compose.yml` with the database. Then:
 
 ```bash
 docker compose up -d
