@@ -1,5 +1,7 @@
 # 🧵 Rollcall
 
+![Rollcall logo](frontend/static/logo.svg)
+
 [![Tests](https://img.shields.io/github/actions/workflow/status/tronyx/rollcall/tests.yml?branch=develop&label=tests)](https://github.com/tronyx/rollcall/actions/workflows/tests.yml?query=branch%3Adevelop)
 [![PostgreSQL 18](https://img.shields.io/badge/postgresql-18-blue)](docs/installation.md#-requirements)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
