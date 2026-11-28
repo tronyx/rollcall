@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE locations SET name = $3, kind = $4, description = $5, sort_order = $6\n        WHERE id = $1 AND owner_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "72ee57601311776edce3c919e1952443217fe0589a4f883703bfbd61a157c713"
+}

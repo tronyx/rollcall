@@ -1,18 +1,50 @@
 use crate::{
     error::{AppError, AppResult},
-    models::{Photo, PhotoOwner, trim_opt},
+    models::{Access, Photo, PhotoOwner, trim_opt},
 };
 use sqlx::PgPool;
 use std::{collections::HashSet, path::Path};
 use uuid::Uuid;
 
-/// Photos of one spool, filament or piece of equipment, oldest first.
-pub async fn list(pool: &PgPool, owner: &PhotoOwner) -> AppResult<Vec<Photo>> {
+/// What you may do with the photos of a spool, filament or piece of
+/// equipment: what you may do with the thing itself. Not found if you can't see it.
+async fn access(pool: &PgPool, me: Uuid, owner: &PhotoOwner) -> AppResult<Access> {
     if owner.count() != 1 {
         return Err(AppError::BadRequest(
             "give exactly one of spool_id, filament_id or equipment_id".into(),
         ));
     }
+    if let Some(id) = owner.spool_id {
+        return Ok(super::spools::access(pool, me, id).await?.0);
+    }
+    if let Some(id) = owner.filament_id {
+        return super::filaments::access(pool, me, id).await;
+    }
+    let id = owner.equipment_id.unwrap_or_default();
+    super::equipment::get(pool, me, id).await?;
+    Ok(Access::Owner)
+}
+
+/// Adding or changing photos: an editor of a shared spool may; a
+/// filament or equipment only takes photos from its owner.
+async fn require_edit(pool: &PgPool, me: Uuid, owner: &PhotoOwner) -> AppResult<()> {
+    let access = access(pool, me, owner).await?;
+    let ok = if owner.spool_id.is_some() {
+        access.can_edit()
+    } else {
+        access == Access::Owner
+    };
+    if !ok {
+        return Err(AppError::Forbidden(
+            "You can look at these photos but not change them.".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Photos of one spool, filament or piece of equipment, oldest first.
+pub async fn list(pool: &PgPool, me: Uuid, owner: &PhotoOwner) -> AppResult<Vec<Photo>> {
+    access(pool, me, owner).await?;
     Ok(sqlx::query_as!(
         Photo,
         r#"
@@ -31,7 +63,14 @@ pub async fn list(pool: &PgPool, owner: &PhotoOwner) -> AppResult<Vec<Photo>> {
     .await?)
 }
 
-pub async fn get(pool: &PgPool, id: Uuid) -> AppResult<(Photo, String)> {
+/// A photo you can see, with its file name.
+pub async fn get(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<(Photo, String)> {
+    let found = fetch(pool, id).await?;
+    access(pool, me, &found.0.owner()).await?;
+    Ok(found)
+}
+
+async fn fetch(pool: &PgPool, id: Uuid) -> AppResult<(Photo, String)> {
     let row = sqlx::query!(
         r#"
         SELECT id, spool_id, filament_id, equipment_id, content_type, size_bytes,
@@ -65,6 +104,7 @@ pub async fn get(pool: &PgPool, id: Uuid) -> AppResult<(Photo, String)> {
 #[allow(clippy::too_many_arguments)]
 pub async fn add(
     pool: &PgPool,
+    me: Uuid,
     dir: &Path,
     owner: &PhotoOwner,
     bytes: &[u8],
@@ -73,32 +113,7 @@ pub async fn add(
     original_name: Option<String>,
     caption: Option<String>,
 ) -> AppResult<Photo> {
-    if owner.count() != 1 {
-        return Err(AppError::BadRequest(
-            "give exactly one of spool_id, filament_id or equipment_id".into(),
-        ));
-    }
-    let exists = sqlx::query_scalar!(
-        r#"
-        SELECT EXISTS (SELECT 1 FROM spools WHERE id = $1)
-            OR EXISTS (SELECT 1 FROM filaments WHERE id = $2)
-            OR EXISTS (SELECT 1 FROM equipment WHERE id = $3) AS "exists!"
-        "#,
-        owner.spool_id,
-        owner.filament_id,
-        owner.equipment_id
-    )
-    .fetch_one(pool)
-    .await?;
-    if !exists {
-        return Err(AppError::NotFound(if owner.spool_id.is_some() {
-            "spool"
-        } else if owner.filament_id.is_some() {
-            "filament"
-        } else {
-            "equipment"
-        }));
-    }
+    require_edit(pool, me, owner).await?;
 
     let id = Uuid::now_v7();
     let file_name = format!("{id}.{ext}");
@@ -129,10 +144,16 @@ pub async fn add(
         let _ = tokio::fs::remove_file(&path).await;
         return Err(e.into());
     }
-    Ok(get(pool, id).await?.0)
+    Ok(fetch(pool, id).await?.0)
 }
 
-pub async fn set_caption(pool: &PgPool, id: Uuid, caption: Option<String>) -> AppResult<Photo> {
+pub async fn set_caption(
+    pool: &PgPool,
+    me: Uuid,
+    id: Uuid,
+    caption: Option<String>,
+) -> AppResult<Photo> {
+    require_edit(pool, me, &get(pool, me, id).await?.0.owner()).await?;
     let res = sqlx::query!(
         "UPDATE photos SET caption = $2 WHERE id = $1",
         id,
@@ -143,11 +164,12 @@ pub async fn set_caption(pool: &PgPool, id: Uuid, caption: Option<String>) -> Ap
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("photo"));
     }
-    Ok(get(pool, id).await?.0)
+    Ok(fetch(pool, id).await?.0)
 }
 
 /// Deletes the row, then the file. A file that's already gone is fine.
-pub async fn delete(pool: &PgPool, dir: &Path, id: Uuid) -> AppResult<()> {
+pub async fn delete(pool: &PgPool, me: Uuid, dir: &Path, id: Uuid) -> AppResult<()> {
+    require_edit(pool, me, &get(pool, me, id).await?.0.owner()).await?;
     let file_name = sqlx::query_scalar!("DELETE FROM photos WHERE id = $1 RETURNING file_name", id)
         .fetch_optional(pool)
         .await?

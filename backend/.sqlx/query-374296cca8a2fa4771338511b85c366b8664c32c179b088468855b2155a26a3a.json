@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO slicer_profiles (name, filament_id, owner_id)\n                    SELECT ps.profile_name, s.filament_id, $4\n                    FROM print_slots ps, spools s\n                    WHERE ps.print_id = $1 AND ps.slot = $2 AND s.id = $3\n                      AND ps.profile_name IS NOT NULL\n                    ON CONFLICT (owner_id, name) DO UPDATE\n                        SET filament_id = EXCLUDED.filament_id, updated_at = now()\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "374296cca8a2fa4771338511b85c366b8664c32c179b088468855b2155a26a3a"
+}

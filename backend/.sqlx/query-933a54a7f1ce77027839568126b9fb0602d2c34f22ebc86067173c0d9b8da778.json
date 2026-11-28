@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO location_shares (location_id, user_id, access) VALUES ($1, $2, $3)\n        ON CONFLICT (location_id, user_id) DO UPDATE SET access = EXCLUDED.access\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "share_access",
+            "kind": {
+              "Enum": [
+                "view",
+                "edit"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "933a54a7f1ce77027839568126b9fb0602d2c34f22ebc86067173c0d9b8da778"
+}

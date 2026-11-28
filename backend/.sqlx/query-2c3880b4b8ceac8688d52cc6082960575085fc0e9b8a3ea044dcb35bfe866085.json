@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH v AS (\n            SELECT s.status, s.remaining_weight_g,\n                   (s.status NOT IN ('empty', 'archived')\n                    AND s.remaining_weight_g < st.low_stock_threshold_g) AS is_low_stock\n            FROM spools s\n            JOIN user_settings st ON st.user_id = s.owner_id\n            WHERE spool_access(s.owner_id, s.location_id, $1) IS NOT NULL\n        )\n        SELECT\n            count(*) FILTER (WHERE status NOT IN ('empty', 'archived')) AS \"spools_in_stock!\",\n            count(*) FILTER (WHERE status = 'sealed')                   AS \"spools_sealed!\",\n            count(*) FILTER (WHERE status = 'active')                   AS \"spools_active!\",\n            count(*) FILTER (WHERE status = 'drying')                   AS \"spools_drying!\",\n            count(*) FILTER (WHERE status = 'empty')                    AS \"spools_empty!\",\n            coalesce(round(sum(remaining_weight_g)\n                FILTER (WHERE status NOT IN ('empty', 'archived')) / 1000, 2), 0) AS \"remaining_kg!\",\n            count(*) FILTER (WHERE is_low_stock)                        AS \"low_stock_count!\",\n            (SELECT low_stock_threshold_g FROM user_settings WHERE user_id = $1)\n                                                                        AS \"low_stock_threshold_g!\"\n        FROM v\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "spools_in_stock!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "spools_sealed!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "spools_active!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "spools_drying!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "spools_empty!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "remaining_kg!",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "low_stock_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "low_stock_threshold_g!",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "2c3880b4b8ceac8688d52cc6082960575085fc0e9b8a3ea044dcb35bfe866085"
+}

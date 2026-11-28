@@ -8,7 +8,12 @@ use crate::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
-async fn query(pool: &PgPool, id: Option<Uuid>, f: &EquipmentFilter) -> AppResult<Vec<Equipment>> {
+async fn query(
+    pool: &PgPool,
+    me: Uuid,
+    id: Option<Uuid>,
+    f: &EquipmentFilter,
+) -> AppResult<Vec<Equipment>> {
     // "none" asks for items with no printer; anything else must be an id.
     let (printer_id, no_printer) = match f.printer.as_deref().map(str::trim) {
         None | Some("") => (None, false),
@@ -36,7 +41,8 @@ async fn query(pool: &PgPool, id: Option<Uuid>, f: &EquipmentFilter) -> AppResul
         FROM equipment e
         LEFT JOIN brands b   ON b.id = e.brand_id
         LEFT JOIN printers p ON p.id = e.printer_id
-        WHERE ($1::uuid IS NULL OR e.id = $1)
+        WHERE e.owner_id = $8
+          AND ($1::uuid IS NULL OR e.id = $1)
           AND ($2::equipment_category IS NULL OR e.category = $2)
           AND ($3::uuid IS NULL OR e.brand_id = $3)
           AND ($4::uuid IS NULL OR e.printer_id = $4)
@@ -55,17 +61,18 @@ async fn query(pool: &PgPool, id: Option<Uuid>, f: &EquipmentFilter) -> AppResul
         no_printer,
         f.include_retired,
         q,
+        me,
     )
     .fetch_all(pool)
     .await?)
 }
 
-pub async fn list(pool: &PgPool, filter: &EquipmentFilter) -> AppResult<Vec<Equipment>> {
-    query(pool, None, filter).await
+pub async fn list(pool: &PgPool, me: Uuid, filter: &EquipmentFilter) -> AppResult<Vec<Equipment>> {
+    query(pool, me, None, filter).await
 }
 
-pub async fn get(pool: &PgPool, id: Uuid) -> AppResult<Equipment> {
-    query(pool, Some(id), &EquipmentFilter::default())
+pub async fn get(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<Equipment> {
+    query(pool, me, Some(id), &EquipmentFilter::default())
         .await?
         .into_iter()
         .next()
@@ -73,7 +80,12 @@ pub async fn get(pool: &PgPool, id: Uuid) -> AppResult<Equipment> {
 }
 
 /// Inserts (`id` is None) or replaces an item.
-pub async fn save(pool: &PgPool, id: Option<Uuid>, input: SaveEquipment) -> AppResult<Equipment> {
+pub async fn save(
+    pool: &PgPool,
+    me: Uuid,
+    id: Option<Uuid>,
+    input: SaveEquipment,
+) -> AppResult<Equipment> {
     let name = input.name.trim().to_string();
     if name.is_empty() {
         return Err(AppError::BadRequest("name is required".into()));
@@ -84,10 +96,24 @@ pub async fn save(pool: &PgPool, id: Option<Uuid>, input: SaveEquipment) -> AppR
         .filter(|c| !c.is_empty());
     let mut tx = pool.begin().await?;
     if let Some(id) = id {
-        sqlx::query_scalar!("SELECT id FROM equipment WHERE id = $1 FOR UPDATE", id)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(AppError::NotFound("equipment"))?;
+        sqlx::query_scalar!(
+            "SELECT id FROM equipment WHERE id = $1 AND owner_id = $2 FOR UPDATE",
+            id,
+            me
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(AppError::NotFound("equipment"))?;
+    }
+    if let Some(printer) = input.printer_id {
+        sqlx::query_scalar!(
+            "SELECT id FROM printers WHERE id = $1 AND owner_id = $2",
+            printer,
+            me
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(AppError::NotFound("printer"))?;
     }
     let brand_id = match trim_opt(input.brand_name) {
         Some(b) => Some(upsert_brand(&mut tx, &b).await?),
@@ -103,10 +129,11 @@ pub async fn save(pool: &PgPool, id: Option<Uuid>, input: SaveEquipment) -> AppR
         INSERT INTO equipment (
             id, category, kind, name, brand_id, printer_id, model, quantity, retired,
             acquisition, acquired_on, acquired_from, price, currency, discounted, discount_note,
-            notes
+            notes, owner_id
         ) VALUES (
             coalesce($1, uuidv7()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-            coalesce($14, (SELECT default_currency FROM app_settings)), $15, $16, $17
+            coalesce($14, (SELECT default_currency FROM user_settings WHERE user_id = $18)),
+            $15, $16, $17, $18
         )
         ON CONFLICT (id) DO UPDATE SET
             category = EXCLUDED.category, kind = EXCLUDED.kind, name = EXCLUDED.name,
@@ -135,17 +162,22 @@ pub async fn save(pool: &PgPool, id: Option<Uuid>, input: SaveEquipment) -> AppR
         input.discounted,
         discount_note,
         trim_opt(input.notes),
+        me,
     )
     .fetch_one(&mut *tx)
     .await?;
     tx.commit().await?;
-    get(pool, saved).await
+    get(pool, me, saved).await
 }
 
-pub async fn delete(pool: &PgPool, id: Uuid) -> AppResult<()> {
-    let res = sqlx::query!("DELETE FROM equipment WHERE id = $1", id)
-        .execute(pool)
-        .await?;
+pub async fn delete(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<()> {
+    let res = sqlx::query!(
+        "DELETE FROM equipment WHERE id = $1 AND owner_id = $2",
+        id,
+        me
+    )
+    .execute(pool)
+    .await?;
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("equipment"));
     }

@@ -9,7 +9,11 @@
 		type HumidityLevel
 	} from '#lib/util/format.ts';
 
-	let { spoolId, card }: { spoolId: string; card: string } = $props();
+	let {
+		spoolId,
+		card,
+		readonly = false
+	}: { spoolId: string; card: string; readonly?: boolean } = $props();
 
 	let readings = $state<HumidityReading[]>([]);
 	let loaded = $state(false);
@@ -107,7 +111,7 @@
 <section class={card}>
 	<div class="mb-2 flex items-center justify-between gap-2">
 		<h2 class="font-semibold">Humidity</h2>
-		{#if loaded && !adding}
+		{#if loaded && !adding && !readonly}
 			<button
 				type="button"
 				class="text-sm font-semibold text-orange-700 dark:text-orange-400"
@@ -229,14 +233,16 @@
 							{dateTime(r.measured_at)}{r.note ? ` · ${r.note}` : ''}
 						</span>
 					</span>
-					<button
-						type="button"
-						class="shrink-0 text-xs font-medium text-slate-500 hover:text-red-600"
-						onclick={() => remove(r)}
-						aria-label="Delete the {r.humidity_pct}% reading"
-					>
-						Delete
-					</button>
+					{#if !readonly}
+						<button
+							type="button"
+							class="shrink-0 text-xs font-medium text-slate-500 hover:text-red-600"
+							onclick={() => remove(r)}
+							aria-label="Delete the {r.humidity_pct}% reading"
+						>
+							Delete
+						</button>
+					{/if}
 				</li>
 			{/each}
 		</ul>

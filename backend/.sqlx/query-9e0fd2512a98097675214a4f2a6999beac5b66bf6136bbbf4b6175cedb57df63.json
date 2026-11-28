@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE printers SET is_default = false\n            WHERE is_default AND owner_id = $2 AND id IS DISTINCT FROM $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9e0fd2512a98097675214a4f2a6999beac5b66bf6136bbbf4b6175cedb57df63"
+}

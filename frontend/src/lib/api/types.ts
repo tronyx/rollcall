@@ -43,6 +43,10 @@ export interface Spool {
 	location_id: string | null;
 	location_name: string | null;
 	location_kind: LocationKind | null;
+	/** What you may do with it: your own, or shared with you in a location. */
+	access: Access;
+	/** The owner's username, when the spool isn't yours. */
+	owner_username: string | null;
 }
 
 export interface SpoolFilter {
@@ -211,12 +215,27 @@ export interface Material {
 	is_abrasive: boolean;
 }
 
+export type Access = 'owner' | 'edit' | 'view';
+export type ShareAccess = 'view' | 'edit';
+
 export interface Location {
 	id: string;
 	name: string;
 	kind: LocationKind;
 	description: string | null;
 	sort_order: number;
+	/** `owner` for yours, else what its owner shared with you. */
+	access: Access;
+	/** The owner's username, for a location shared with you. */
+	owner_username: string | null;
+	/** How many accounts you shared it with (yours only). */
+	share_count: number;
+}
+
+export interface LocationShare {
+	user_id: string;
+	username: string;
+	access: ShareAccess;
 }
 
 export interface NewLocation {

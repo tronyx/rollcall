@@ -82,6 +82,21 @@ pub async fn create_user(
     )
     .fetch_one(&mut *tx)
     .await?;
+    sqlx::query!(
+        r#"
+        INSERT INTO user_settings (user_id, low_stock_threshold_g, default_currency)
+        SELECT $1, low_stock_threshold_g, default_currency FROM app_settings
+        "#,
+        user.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    if first {
+        // Data from before accounts existed belongs to the first one.
+        sqlx::query!("SELECT adopt_unowned($1)", user.id)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
     Ok(user)
 }

@@ -1,4 +1,4 @@
-use super::LocationKind;
+use super::{Access, LocationKind, ShareAccess};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -29,6 +29,27 @@ pub struct Location {
     pub kind: LocationKind,
     pub description: Option<String>,
     pub sort_order: i32,
+    /// `owner` for your own locations, else what its owner shared with you.
+    pub access: Access,
+    /// The owner's username, for a location shared with you.
+    pub owner_username: Option<String>,
+    /// How many accounts you shared it with (your own locations only).
+    pub share_count: i64,
+}
+
+/// An account a location is shared with.
+#[derive(Debug, Clone, Serialize)]
+pub struct LocationShare {
+    pub user_id: Uuid,
+    pub username: String,
+    pub access: ShareAccess,
+}
+
+/// `PUT /api/locations/{id}/shares`: share with an account by username.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ShareLocation {
+    pub username: String,
+    pub access: ShareAccess,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -72,7 +93,7 @@ fn default_nozzle() -> Decimal {
     Decimal::new(40, 2)
 }
 
-/// The single row of instance-wide settings.
+/// Your own settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub low_stock_threshold_g: Decimal,

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { locationLabel } from '#lib/util/locations.ts';
 	import type { Brand, Location, Material, SpoolFilter } from '#lib/api/types.ts';
 
 	let {
@@ -47,7 +48,7 @@
 		</select>
 		<select bind:value={filter.location_id} class={field} aria-label="Location">
 			<option value={undefined}>All locations</option>
-			{#each locations as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
+			{#each locations as l (l.id)}<option value={l.id}>{locationLabel(l)}</option>{/each}
 		</select>
 		<input
 			type="text"

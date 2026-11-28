@@ -76,6 +76,17 @@ pub fn sniff_image(bytes: &[u8]) -> Option<(&'static str, &'static str)> {
     }
 }
 
+impl Photo {
+    /// The spool, filament or equipment this photo belongs to.
+    pub fn owner(&self) -> PhotoOwner {
+        PhotoOwner {
+            spool_id: self.spool_id,
+            filament_id: self.filament_id,
+            equipment_id: self.equipment_id,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::sniff_image;

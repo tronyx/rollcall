@@ -1,5 +1,6 @@
 use crate::{
     AppState,
+    auth::CurrentUser,
     error::AppResult,
     models::{HumidityReading, NewHumidityReading},
     repo::humidity,
@@ -20,23 +21,29 @@ pub fn routes() -> Router<AppState> {
 
 async fn list(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Vec<HumidityReading>>> {
-    Ok(Json(humidity::list(&s.pool, id).await?))
+    Ok(Json(humidity::list(&s.pool, me.id, id).await?))
 }
 
 async fn add(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     Path(id): Path<Uuid>,
     Json(body): Json<NewHumidityReading>,
 ) -> AppResult<(StatusCode, Json<HumidityReading>)> {
     Ok((
         StatusCode::CREATED,
-        Json(humidity::add(&s.pool, id, body).await?),
+        Json(humidity::add(&s.pool, me.id, id, body).await?),
     ))
 }
 
-async fn remove(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
-    humidity::delete(&s.pool, id).await?;
+async fn remove(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    humidity::delete(&s.pool, me.id, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

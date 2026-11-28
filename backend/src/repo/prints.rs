@@ -16,7 +16,12 @@ const DUPLICATE_MINUTES: i32 = 10;
 
 /// Records a print and logs each slot whose spool is known.
 /// Returns the print and whether it is new (false for a repeated upload).
-pub async fn create(pool: &PgPool, name: &str, sliced: &SlicedPrint) -> AppResult<(Print, bool)> {
+pub async fn create(
+    pool: &PgPool,
+    me: Uuid,
+    name: &str,
+    sliced: &SlicedPrint,
+) -> AppResult<(Print, bool)> {
     if sliced.slots.is_empty() {
         return Err(AppError::BadRequest(
             "no filament use found; send G-code from OrcaSlicer or Bambu Studio".into(),
@@ -26,28 +31,31 @@ pub async fn create(pool: &PgPool, name: &str, sliced: &SlicedPrint) -> AppResul
     let existing = sqlx::query_scalar!(
         r#"
         SELECT id FROM prints
-        WHERE fingerprint = $1 AND created_at > now() - make_interval(mins => $2)
+        WHERE owner_id = $3 AND fingerprint = $1
+          AND created_at > now() - make_interval(mins => $2)
         ORDER BY created_at DESC LIMIT 1
         "#,
         fingerprint,
-        DUPLICATE_MINUTES
+        DUPLICATE_MINUTES,
+        me
     )
     .fetch_optional(pool)
     .await?;
     if let Some(id) = existing {
-        return Ok((get(pool, id).await?, false));
+        return Ok((get(pool, me, id).await?, false));
     }
 
     let mut tx = pool.begin().await?;
     let id = sqlx::query_scalar!(
         r#"
-        INSERT INTO prints (name, slicer, printer_preset, fingerprint)
-        VALUES ($1, $2, $3, $4) RETURNING id
+        INSERT INTO prints (name, slicer, printer_preset, fingerprint, owner_id)
+        VALUES ($1, $2, $3, $4, $5) RETURNING id
         "#,
         name,
         sliced.slicer,
         sliced.printer,
-        fingerprint
+        fingerprint,
+        me
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -71,11 +79,11 @@ pub async fn create(pool: &PgPool, name: &str, sliced: &SlicedPrint) -> AppResul
 
     for s in &sliced.slots {
         let Some(profile) = &s.profile else { continue };
-        if let Some(spool_id) = match_spool(pool, profile).await? {
-            log_slot(pool, id, s.slot, spool_id).await?;
+        if let Some(spool_id) = match_spool(pool, me, profile).await? {
+            log_slot(pool, me, id, s.slot, spool_id).await?;
         }
     }
-    Ok((get(pool, id).await?, true))
+    Ok((get(pool, me, id).await?, true))
 }
 
 fn fingerprint(name: &str, p: &SlicedPrint) -> String {
@@ -101,15 +109,18 @@ fn fingerprint(name: &str, p: &SlicedPrint) -> String {
 
 /// The spool a slicer preset prints from: the one active (or drying) spool of
 /// its filament, or failing that its one sealed spool. None when it's unclear.
-pub async fn match_spool(pool: &PgPool, profile: &str) -> AppResult<Option<Uuid>> {
+/// Only your presets, and spools you can change, count.
+pub async fn match_spool(pool: &PgPool, me: Uuid, profile: &str) -> AppResult<Option<Uuid>> {
     let rows = sqlx::query!(
         r#"
         SELECT s.id, s.status AS "status: SpoolStatus"
         FROM slicer_profiles sp
         JOIN spools s ON s.filament_id = sp.filament_id
-        WHERE sp.name = $1 AND s.status IN ('active', 'drying', 'sealed')
+        WHERE sp.owner_id = $2 AND sp.name = $1 AND s.status IN ('active', 'drying', 'sealed')
+          AND spool_access(s.owner_id, s.location_id, $2) IN ('owner', 'edit')
         "#,
-        profile
+        profile,
+        me
     )
     .fetch_all(pool)
     .await?;
@@ -155,7 +166,13 @@ async fn slot_row(pool: &PgPool, print_id: Uuid, slot: i16) -> AppResult<SlotRow
 }
 
 /// Deducts a pending slot's grams from the spool.
-async fn log_slot(pool: &PgPool, print_id: Uuid, slot: i16, spool_id: Uuid) -> AppResult<()> {
+async fn log_slot(
+    pool: &PgPool,
+    me: Uuid,
+    print_id: Uuid,
+    slot: i16,
+    spool_id: Uuid,
+) -> AppResult<()> {
     let row = slot_row(pool, print_id, slot).await?;
     if row.status != PrintSlotStatus::Pending {
         return Err(AppError::Conflict(
@@ -166,6 +183,7 @@ async fn log_slot(pool: &PgPool, print_id: Uuid, slot: i16, spool_id: Uuid) -> A
     let grams = row.grams.round_dp(1).max(Decimal::new(1, 1));
     let change = spools::adjust_weight(
         pool,
+        me,
         spool_id,
         WeightAdjustment {
             kind: WeightEventKind::Print,
@@ -194,27 +212,30 @@ async fn log_slot(pool: &PgPool, print_id: Uuid, slot: i16, spool_id: Uuid) -> A
 /// Picks the spool for a pending slot, or skips it.
 pub async fn assign(
     pool: &PgPool,
+    me: Uuid,
     print_id: Uuid,
     slot: i16,
     body: AssignSlot,
 ) -> AppResult<Print> {
+    get(pool, me, print_id).await?;
     match (body.spool_id, body.skip) {
         (Some(spool_id), false) => {
-            log_slot(pool, print_id, slot, spool_id).await?;
+            log_slot(pool, me, print_id, slot, spool_id).await?;
             if body.remember.unwrap_or(true) {
                 sqlx::query!(
                     r#"
-                    INSERT INTO slicer_profiles (name, filament_id)
-                    SELECT ps.profile_name, s.filament_id
+                    INSERT INTO slicer_profiles (name, filament_id, owner_id)
+                    SELECT ps.profile_name, s.filament_id, $4
                     FROM print_slots ps, spools s
                     WHERE ps.print_id = $1 AND ps.slot = $2 AND s.id = $3
                       AND ps.profile_name IS NOT NULL
-                    ON CONFLICT (name) DO UPDATE
+                    ON CONFLICT (owner_id, name) DO UPDATE
                         SET filament_id = EXCLUDED.filament_id, updated_at = now()
                     "#,
                     print_id,
                     slot,
-                    spool_id
+                    spool_id,
+                    me
                 )
                 .execute(pool)
                 .await?;
@@ -241,17 +262,18 @@ pub async fn assign(
             ));
         }
     }
-    get(pool, print_id).await
+    get(pool, me, print_id).await
 }
 
 /// Puts a slot back to pending, adding its grams back to the spool if they
 /// were deducted.
-pub async fn undo(pool: &PgPool, print_id: Uuid, slot: i16) -> AppResult<Print> {
-    undo_slot(pool, print_id, slot).await?;
-    get(pool, print_id).await
+pub async fn undo(pool: &PgPool, me: Uuid, print_id: Uuid, slot: i16) -> AppResult<Print> {
+    get(pool, me, print_id).await?;
+    undo_slot(pool, me, print_id, slot).await?;
+    get(pool, me, print_id).await
 }
 
-async fn undo_slot(pool: &PgPool, print_id: Uuid, slot: i16) -> AppResult<()> {
+async fn undo_slot(pool: &PgPool, me: Uuid, print_id: Uuid, slot: i16) -> AppResult<()> {
     let row = slot_row(pool, print_id, slot).await?;
     if row.status == PrintSlotStatus::Logged
         && let Some(event_id) = row.weight_event_id
@@ -266,6 +288,7 @@ async fn undo_slot(pool: &PgPool, print_id: Uuid, slot: i16) -> AppResult<()> {
         if let Some(e) = event {
             spools::adjust_weight(
                 pool,
+                me,
                 e.spool_id,
                 WeightAdjustment {
                     kind: WeightEventKind::Correction,
@@ -292,7 +315,8 @@ async fn undo_slot(pool: &PgPool, print_id: Uuid, slot: i16) -> AppResult<()> {
 }
 
 /// Removes a print, giving back the filament it took.
-pub async fn delete(pool: &PgPool, id: Uuid) -> AppResult<()> {
+pub async fn delete(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<()> {
+    get(pool, me, id).await?;
     let slots = sqlx::query_scalar!(
         "SELECT slot FROM print_slots WHERE print_id = $1 AND status = 'logged'",
         id
@@ -300,7 +324,7 @@ pub async fn delete(pool: &PgPool, id: Uuid) -> AppResult<()> {
     .fetch_all(pool)
     .await?;
     for slot in slots {
-        undo_slot(pool, id, slot).await?;
+        undo_slot(pool, me, id, slot).await?;
     }
     let res = sqlx::query!("DELETE FROM prints WHERE id = $1", id)
         .execute(pool)
@@ -311,21 +335,34 @@ pub async fn delete(pool: &PgPool, id: Uuid) -> AppResult<()> {
     Ok(())
 }
 
-pub async fn get(pool: &PgPool, id: Uuid) -> AppResult<Print> {
-    let mut found = load(pool, Some(id), false, 1).await?;
+pub async fn get(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<Print> {
+    let mut found = load(pool, me, Some(id), false, 1).await?;
     found.pop().ok_or(AppError::NotFound("print"))
 }
 
-pub async fn list(pool: &PgPool, f: &PrintFilter) -> AppResult<Vec<Print>> {
-    load(pool, None, f.pending, f.limit.unwrap_or(50).clamp(1, 500)).await
+pub async fn list(pool: &PgPool, me: Uuid, f: &PrintFilter) -> AppResult<Vec<Print>> {
+    load(
+        pool,
+        me,
+        None,
+        f.pending,
+        f.limit.unwrap_or(50).clamp(1, 500),
+    )
+    .await
 }
 
-async fn load(pool: &PgPool, id: Option<Uuid>, pending: bool, limit: i64) -> AppResult<Vec<Print>> {
+async fn load(
+    pool: &PgPool,
+    me: Uuid,
+    id: Option<Uuid>,
+    pending: bool,
+    limit: i64,
+) -> AppResult<Vec<Print>> {
     let prints = sqlx::query!(
         r#"
         SELECT p.id, p.name, p.slicer, p.printer_preset, p.created_at
         FROM prints p
-        WHERE ($1::uuid IS NULL OR p.id = $1)
+        WHERE p.owner_id = $4 AND ($1::uuid IS NULL OR p.id = $1)
           AND (NOT $2 OR EXISTS (SELECT 1 FROM print_slots ps
                                  WHERE ps.print_id = p.id AND ps.status = 'pending'))
         ORDER BY p.created_at DESC, p.id DESC
@@ -333,7 +370,8 @@ async fn load(pool: &PgPool, id: Option<Uuid>, pending: bool, limit: i64) -> App
         "#,
         id,
         pending,
-        limit
+        limit,
+        me
     )
     .fetch_all(pool)
     .await?;
@@ -347,7 +385,7 @@ async fn load(pool: &PgPool, id: Option<Uuid>, pending: bool, limit: i64) -> App
                f.product_name, f.color_name AS "color_name?", f.color_hex AS spool_color_hex,
                s.remaining_weight_g AS "remaining_weight_g?"
         FROM print_slots ps
-        LEFT JOIN slicer_profiles sp ON sp.name = ps.profile_name
+        LEFT JOIN slicer_profiles sp ON sp.name = ps.profile_name AND sp.owner_id = $2
         LEFT JOIN spools s    ON s.id = ps.spool_id
         LEFT JOIN filaments f ON f.id = s.filament_id
         LEFT JOIN brands b    ON b.id = f.brand_id
@@ -355,7 +393,8 @@ async fn load(pool: &PgPool, id: Option<Uuid>, pending: bool, limit: i64) -> App
         WHERE ps.print_id = ANY($1)
         ORDER BY ps.slot
         "#,
-        &ids
+        &ids,
+        me
     )
     .fetch_all(pool)
     .await?;
@@ -411,18 +450,21 @@ async fn load(pool: &PgPool, id: Option<Uuid>, pending: bool, limit: i64) -> App
 }
 
 /// Records that a slicer preset is this filament (on export from Rollcall).
-pub async fn save_profile(pool: &PgPool, p: &SlicerProfile) -> AppResult<SlicerProfile> {
+pub async fn save_profile(pool: &PgPool, me: Uuid, p: &SlicerProfile) -> AppResult<SlicerProfile> {
     let name = p.name.trim();
     if name.is_empty() {
         return Err(AppError::BadRequest("name must not be empty".into()));
     }
+    super::filaments::access(pool, me, p.filament_id).await?;
     sqlx::query!(
         r#"
-        INSERT INTO slicer_profiles (name, filament_id) VALUES ($1, $2)
-        ON CONFLICT (name) DO UPDATE SET filament_id = EXCLUDED.filament_id, updated_at = now()
+        INSERT INTO slicer_profiles (name, filament_id, owner_id) VALUES ($1, $2, $3)
+        ON CONFLICT (owner_id, name) DO UPDATE
+            SET filament_id = EXCLUDED.filament_id, updated_at = now()
         "#,
         name,
-        p.filament_id
+        p.filament_id,
+        me
     )
     .execute(pool)
     .await?;
@@ -432,24 +474,33 @@ pub async fn save_profile(pool: &PgPool, p: &SlicerProfile) -> AppResult<SlicerP
     })
 }
 
-pub async fn profiles(pool: &PgPool, filament_id: Option<Uuid>) -> AppResult<Vec<SlicerProfile>> {
+pub async fn profiles(
+    pool: &PgPool,
+    me: Uuid,
+    filament_id: Option<Uuid>,
+) -> AppResult<Vec<SlicerProfile>> {
     Ok(sqlx::query_as!(
         SlicerProfile,
         r#"
         SELECT name, filament_id FROM slicer_profiles
-        WHERE $1::uuid IS NULL OR filament_id = $1
+        WHERE owner_id = $2 AND ($1::uuid IS NULL OR filament_id = $1)
         ORDER BY name
         "#,
-        filament_id
+        filament_id,
+        me
     )
     .fetch_all(pool)
     .await?)
 }
 
-pub async fn delete_profile(pool: &PgPool, name: &str) -> AppResult<()> {
-    let res = sqlx::query!("DELETE FROM slicer_profiles WHERE name = $1", name)
-        .execute(pool)
-        .await?;
+pub async fn delete_profile(pool: &PgPool, me: Uuid, name: &str) -> AppResult<()> {
+    let res = sqlx::query!(
+        "DELETE FROM slicer_profiles WHERE name = $1 AND owner_id = $2",
+        name,
+        me
+    )
+    .execute(pool)
+    .await?;
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("slicer profile"));
     }

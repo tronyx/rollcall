@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.name, p.slicer, p.printer_preset, p.created_at\n        FROM prints p\n        WHERE p.owner_id = $4 AND ($1::uuid IS NULL OR p.id = $1)\n          AND (NOT $2 OR EXISTS (SELECT 1 FROM print_slots ps\n                                 WHERE ps.print_id = p.id AND ps.status = 'pending'))\n        ORDER BY p.created_at DESC, p.id DESC\n        LIMIT $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slicer",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "printer_preset",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "b1e2eeb57d224d56d76b8be830f3d6b1e27b9374f493ca26ac669fd2a78ef8bb"
+}

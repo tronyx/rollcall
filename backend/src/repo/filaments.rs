@@ -1,13 +1,14 @@
 use super::lookups::{material_id_by_code, upsert_brand};
 use crate::{
     error::{AppError, AppResult},
-    models::{Filament, FilamentSpecs, NewFilament, SpecSource},
+    models::{Access, Filament, FilamentSpecs, NewFilament, SpecSource},
 };
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-/// Lists filaments, or fetches one when `id` is given.
-async fn query_filaments(pool: &PgPool, id: Option<Uuid>) -> AppResult<Vec<Filament>> {
+/// Lists your filaments, or fetches one when `id` is given: yours, or one
+/// with a spool you can see.
+async fn query_filaments(pool: &PgPool, me: Uuid, id: Option<Uuid>) -> AppResult<Vec<Filament>> {
     let rows = sqlx::query!(
         r#"
         SELECT f.id, f.brand_id, b.name AS brand_name, f.material_id, m.code AS material_code,
@@ -20,10 +21,14 @@ async fn query_filaments(pool: &PgPool, id: Option<Uuid>) -> AppResult<Vec<Filam
         FROM filaments f
         JOIN brands b    ON b.id = f.brand_id
         JOIN materials m ON m.id = f.material_id
-        WHERE ($1::uuid IS NULL OR f.id = $1)
+        WHERE ($1::uuid IS NULL AND f.owner_id = $2)
+           OR (f.id = $1 AND (f.owner_id = $2 OR EXISTS (
+                SELECT 1 FROM spools s WHERE s.filament_id = f.id
+                  AND spool_access(s.owner_id, s.location_id, $2) IS NOT NULL)))
         ORDER BY lower(b.name), m.code, lower(f.color_name)
         "#,
-        id
+        id,
+        me
     )
     .fetch_all(pool)
     .await?;
@@ -65,22 +70,44 @@ async fn query_filaments(pool: &PgPool, id: Option<Uuid>) -> AppResult<Vec<Filam
         .collect())
 }
 
-pub async fn list_filaments(pool: &PgPool) -> AppResult<Vec<Filament>> {
-    query_filaments(pool, None).await
+pub async fn list_filaments(pool: &PgPool, me: Uuid) -> AppResult<Vec<Filament>> {
+    query_filaments(pool, me, None).await
 }
 
-pub async fn get_filament(pool: &PgPool, id: Uuid) -> AppResult<Filament> {
-    query_filaments(pool, Some(id))
+pub async fn get_filament(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<Filament> {
+    query_filaments(pool, me, Some(id))
         .await?
         .into_iter()
         .next()
         .ok_or(AppError::NotFound("filament"))
 }
 
+/// `Owner` for your filament, `View` for one with a spool you can see.
+pub async fn access(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<Access> {
+    let owner = sqlx::query_scalar!("SELECT owner_id FROM filaments WHERE id = $1", id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or(AppError::NotFound("filament"))?;
+    if owner == Some(me) {
+        return Ok(Access::Owner);
+    }
+    get_filament(pool, me, id).await.map(|_| Access::View)
+}
+
+pub async fn require_owner(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<()> {
+    match access(pool, me, id).await? {
+        Access::Owner => Ok(()),
+        _ => Err(AppError::Forbidden(
+            "Only the filament's owner can change it.".into(),
+        )),
+    }
+}
+
 /// Reuses an existing filament when the same product page or the same
 /// brand/material/product/color/diameter already exists; otherwise inserts it.
 pub async fn find_or_create(
     tx: &mut Transaction<'_, Postgres>,
+    owner: Uuid,
     mut input: NewFilament,
 ) -> AppResult<Uuid> {
     input.normalize();
@@ -93,11 +120,12 @@ pub async fn find_or_create(
     if let Some(existing) = sqlx::query_scalar!(
         r#"
         SELECT id FROM filaments
-        WHERE ($1::text IS NOT NULL AND source_url = $1)
-           OR (brand_id = $2 AND material_id = $3
-               AND lower(coalesce(product_name, '')) = lower(coalesce($4, ''))
-               AND lower(color_name) = lower($5)
-               AND diameter_mm = $6)
+        WHERE owner_id = $7
+          AND (($1::text IS NOT NULL AND source_url = $1)
+            OR (brand_id = $2 AND material_id = $3
+                AND lower(coalesce(product_name, '')) = lower(coalesce($4, ''))
+                AND lower(color_name) = lower($5)
+                AND diameter_mm = $6))
         LIMIT 1
         "#,
         input.source_url,
@@ -105,7 +133,8 @@ pub async fn find_or_create(
         material_id,
         input.product_name,
         input.color_name,
-        input.diameter_mm
+        input.diameter_mm,
+        owner
     )
     .fetch_optional(&mut **tx)
     .await?
@@ -122,10 +151,10 @@ pub async fn find_or_create(
             diameter_mm, nominal_weight_g, typical_tare_g,
             nozzle_temp_min_c, nozzle_temp_max_c, bed_temp_min_c, bed_temp_max_c,
             print_speed_min_mm_s, print_speed_max_mm_s, drying_temp_c, drying_time_min, density_g_cm3, td_value,
-            source_url, image_url, spec_source, scraped_at, scrape_raw
+            source_url, image_url, spec_source, scraped_at, scrape_raw, owner_id
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-            $19, $20, $21, $22, $23, $24
+            $19, $20, $21, $22, $23, $24, $25
         )
         RETURNING id
         "#,
@@ -152,7 +181,8 @@ pub async fn find_or_create(
         input.image_url,
         input.spec_source as _,
         scraped_at,
-        input.scrape_raw
+        input.scrape_raw,
+        owner
     )
     .fetch_one(&mut **tx)
     .await?;
@@ -163,6 +193,7 @@ pub async fn find_or_create(
 /// change. The brand is created if it's new; the material must exist.
 pub async fn update_filament(
     pool: &PgPool,
+    me: Uuid,
     id: Uuid,
     mut input: NewFilament,
 ) -> AppResult<Filament> {
@@ -170,6 +201,7 @@ pub async fn update_filament(
     if input.color_name.is_empty() {
         return Err(AppError::BadRequest("color_name is required".into()));
     }
+    require_owner(pool, me, id).await?;
     let mut tx = pool.begin().await?;
     let brand_id = upsert_brand(&mut tx, &input.brand_name).await?;
     let material_id = material_id_by_code(&mut tx, &input.material_code).await?;
@@ -217,5 +249,5 @@ pub async fn update_filament(
         return Err(AppError::NotFound("filament"));
     }
     tx.commit().await?;
-    get_filament(pool, id).await
+    get_filament(pool, me, id).await
 }

@@ -8,6 +8,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- Each account has its own inventory: spools, filaments, locations, printers, equipment, prints, slicer presets, and settings. Everything from before goes to the first admin account. Share a location from **Settings › Locations** with another account by username, so they can view its spools, or edit them and add spools there (the spools stay yours). Brands and materials are still one shared list. New endpoints: `/api/locations/{id}/shares`. See [Usage](docs/usage.md#-your-inventory-and-sharing).
 - Sign-in. Every page and API call now needs an account, except `/api/health`. The first account you create is the admin. Registration is off until the admin turns it on in **Settings › Accounts**, and the admin can add accounts, make other admins, reset passwords, and remove accounts. Each account can create API tokens for scripts. Forgot the password? Run `rollcall reset-password USERNAME` in the container. See [Usage](docs/usage.md#-accounts-and-signing-in).
 - **Upgrading:** the first person to open Rollcall after this update creates the admin account, so open it right away. Existing data stays as it is. The slicer print script now needs `--token` with an API token from **Settings**.
 - A Rollcall logo: the full logo (`logo.svg`), an icon-only mark (`logo-mark.svg`) in the app header, and a new favicon.

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT adopt_unowned($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "adopt_unowned",
+        "type_info": "Void"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "426b9188d31cb944f15099209d0eff79c5e35ee79e6d80ee6355f385fa35d947"
+}

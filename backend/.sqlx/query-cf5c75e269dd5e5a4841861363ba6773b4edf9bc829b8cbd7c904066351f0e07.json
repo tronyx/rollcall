@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO locations (owner_id, name, kind, description, sort_order)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cf5c75e269dd5e5a4841861363ba6773b4edf9bc829b8cbd7c904066351f0e07"
+}

@@ -45,6 +45,10 @@ pub struct SpoolView {
     pub location_id: Option<Uuid>,
     pub location_name: Option<String>,
     pub location_kind: Option<LocationKind>,
+    /// What you may do with it: `owner`, or `edit` / `view` in a shared location.
+    pub access: String,
+    /// The owner's username, when the spool isn't yours.
+    pub owner_username: Option<String>,
 }
 
 /// Query-string filters for `GET /api/spools`.

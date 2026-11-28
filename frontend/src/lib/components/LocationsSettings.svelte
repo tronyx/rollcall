@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { api, ApiError } from '#lib/api/client.ts';
-	import type { Location, LocationKind, NewLocation } from '#lib/api/types.ts';
+	import type {
+		Location,
+		LocationKind,
+		LocationShare,
+		NewLocation,
+		ShareAccess
+	} from '#lib/api/types.ts';
+	import { session } from '#lib/state/session.svelte.ts';
 
 	let { locations = $bindable() }: { locations: Location[] } = $props();
 
@@ -41,7 +48,81 @@
 	}
 
 	const sorted = (list: Location[]) =>
-		[...list].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+		[...list].sort(
+			(a, b) =>
+				Number(a.access !== 'owner') - Number(b.access !== 'owner') ||
+				(a.owner_username ?? '').localeCompare(b.owner_username ?? '') ||
+				a.sort_order - b.sort_order ||
+				a.name.localeCompare(b.name)
+		);
+	const own = $derived(locations.filter((l) => l.access === 'owner'));
+	const shared = $derived(locations.filter((l) => l.access !== 'owner'));
+
+	// The location whose sharing panel is open, and its shares.
+	let sharingId = $state<string | null>(null);
+	let shares = $state<LocationShare[]>([]);
+	let shareName = $state('');
+	let shareAccess = $state<ShareAccess>('view');
+
+	const accessLabel = (a: string) => (a === 'edit' ? 'Can edit and add' : 'Can view');
+
+	function setCount(id: string, n: number) {
+		locations = locations.map((l) => (l.id === id ? { ...l, share_count: n } : l));
+	}
+
+	async function openSharing(id: string) {
+		if (sharingId === id) {
+			sharingId = null;
+			return;
+		}
+		error = null;
+		shareName = '';
+		shareAccess = 'view';
+		try {
+			shares = await api.locationShares(id);
+			sharingId = id;
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not load the sharing.';
+		}
+	}
+
+	async function addShare(e: SubmitEvent, id: string) {
+		e.preventDefault();
+		if (!shareName.trim()) return;
+		await changeShare(id, shareName, shareAccess);
+		shareName = '';
+	}
+
+	async function changeShare(id: string, username: string, access: ShareAccess) {
+		busy = true;
+		error = null;
+		try {
+			shares = await api.shareLocation(id, username.trim(), access);
+			setCount(id, shares.length);
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not share the location.';
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function removeShare(id: string, userId: string) {
+		busy = true;
+		error = null;
+		try {
+			await api.unshareLocation(id, userId);
+			if (userId === session.user?.id) {
+				locations = locations.filter((l) => l.id !== id);
+			} else {
+				shares = shares.filter((s) => s.user_id !== userId);
+				setCount(id, shares.length);
+			}
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Could not stop sharing.';
+		} finally {
+			busy = false;
+		}
+	}
 
 	async function save(e: SubmitEvent) {
 		e.preventDefault();
@@ -146,11 +227,11 @@
 
 {#if editingId === 'new'}{@render editor()}{/if}
 
-{#if locations.length === 0 && editingId !== 'new'}
+{#if own.length === 0 && editingId !== 'new'}
 	<p class="py-2 text-sm text-slate-500">No locations yet.</p>
 {/if}
 <ul class="divide-y divide-slate-100 dark:divide-slate-800">
-	{#each locations as l (l.id)}
+	{#each own as l (l.id)}
 		<li>
 			{#if editingId === l.id}
 				{@render editor()}
@@ -176,6 +257,14 @@
 						</button>
 						<button type="button" class="text-sm" onclick={() => (confirmId = null)}>Cancel</button>
 					{:else}
+						<button
+							type="button"
+							class={link}
+							aria-expanded={sharingId === l.id}
+							onclick={() => openSharing(l.id)}
+						>
+							{l.share_count ? `Shared (${l.share_count})` : 'Share'}
+						</button>
 						<button type="button" class={link} onclick={() => startEdit(l)}>Edit</button>
 						<button
 							type="button"
@@ -187,8 +276,86 @@
 						</button>
 					{/if}
 				</div>
+				{#if sharingId === l.id}
+					<div class="mb-3 space-y-2 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
+						<p class="text-xs text-slate-500 dark:text-slate-400">
+							People you share {l.name} with see its spools. With edit access they can also change them
+							and add spools here, which stay yours.
+						</p>
+						{#each shares as sh (sh.user_id)}
+							<div class="flex flex-wrap items-center gap-2">
+								<span class="min-w-0 flex-1 font-medium">{sh.username}</span>
+								<select
+									value={sh.access}
+									disabled={busy}
+									aria-label="Access for {sh.username}"
+									onchange={(e) =>
+										changeShare(l.id, sh.username, e.currentTarget.value as ShareAccess)}
+									class="rounded-lg border-0 bg-white px-2 py-1 text-sm ring-1 ring-slate-300 dark:bg-slate-800 dark:ring-slate-700"
+								>
+									<option value="view">Can view</option>
+									<option value="edit">Can edit and add</option>
+								</select>
+								<button
+									type="button"
+									class="text-sm text-slate-500 hover:text-red-600"
+									disabled={busy}
+									onclick={() => removeShare(l.id, sh.user_id)}
+								>
+									Remove
+								</button>
+							</div>
+						{/each}
+						<form onsubmit={(e) => addShare(e, l.id)} class="flex flex-wrap items-end gap-2">
+							<label class="min-w-0 flex-1">
+								<span class={label}>Username</span>
+								<input
+									type="text"
+									bind:value={shareName}
+									autocapitalize="none"
+									spellcheck="false"
+									class="{input} mt-1"
+								/>
+							</label>
+							<select bind:value={shareAccess} aria-label="Access" class="{input} w-auto">
+								<option value="view">Can view</option>
+								<option value="edit">Can edit and add</option>
+							</select>
+							<button
+								type="submit"
+								disabled={busy || !shareName.trim()}
+								class="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+							>
+								Share
+							</button>
+						</form>
+					</div>
+				{/if}
 			{/if}
 		</li>
 	{/each}
 </ul>
+{#if shared.length}
+	<h3 class="mt-4 mb-1 text-sm font-semibold">Shared with you</h3>
+	<ul class="divide-y divide-slate-100 dark:divide-slate-800">
+		{#each shared as l (l.id)}
+			<li class="flex items-center gap-3 py-2 text-sm">
+				<div class="min-w-0 flex-1">
+					<p class="font-medium">{l.name}</p>
+					<p class="truncate text-xs text-slate-500 dark:text-slate-400">
+						{l.owner_username}'s · {accessLabel(l.access)}
+					</p>
+				</div>
+				<button
+					type="button"
+					class="text-sm text-slate-500 hover:text-red-600"
+					disabled={busy}
+					onclick={() => session.user && removeShare(l.id, session.user.id)}
+				>
+					Leave
+				</button>
+			</li>
+		{/each}
+	</ul>
+{/if}
 {#if error}<p class="mt-2 text-sm text-red-600" role="alert">{error}</p>{/if}
