@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { locationLabel, placeable } from '#lib/util/locations.ts';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type {
 		FieldSource,
@@ -539,7 +540,9 @@
 					<span class={label}>Location</span>
 					<select bind:value={form.location_id} class={input}>
 						<option value="">None</option>
-						{#each locations as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
+						{#each placeable(locations) as l (l.id)}<option value={l.id}>
+								{locationLabel(l)}
+							</option>{/each}
 					</select>
 				</label>
 				<label>

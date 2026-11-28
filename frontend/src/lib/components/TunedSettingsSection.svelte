@@ -21,7 +21,11 @@
 		type Slicer
 	} from '#lib/util/slicer.ts';
 
-	let { filament, card }: { filament: Filament; card: string } = $props();
+	let {
+		filament,
+		card,
+		readonly = false
+	}: { filament: Filament; card: string; readonly?: boolean } = $props();
 
 	let rows = $state<TunedSettings[]>([]);
 	let printers = $state<Printer[]>([]);
@@ -328,7 +332,7 @@
 <section class={card}>
 	<div class="mb-2 flex items-center justify-between gap-2">
 		<h2 class="font-semibold">Tuned settings</h2>
-		{#if loaded && canAdd && editingId === null}
+		{#if loaded && canAdd && editingId === null && !readonly}
 			<button type="button" class={link} onclick={startNew}>+ Add</button>
 		{/if}
 	</div>
@@ -344,7 +348,7 @@
 				They're shared by every spool of it.
 			</p>
 		{/if}
-		{#if printers.length === 0}
+		{#if printers.length === 0 && !readonly}
 			<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
 				To save settings for a specific printer, add it in <a
 					href={resolve('/settings')}
@@ -378,7 +382,9 @@
 									<button type="button" class={link} onclick={() => startExport(row)}>
 										Export
 									</button>
-									<button type="button" class={link} onclick={() => startEdit(row)}>Edit</button>
+									{#if !readonly}<button type="button" class={link} onclick={() => startEdit(row)}>
+											Edit
+										</button>{/if}
 								</div>
 							</div>
 							{#if setFields(row).length}
@@ -406,7 +412,7 @@
 							{#if exportingId === row.id}
 								{@render exporter(row)}
 							{/if}
-							<div class="mt-2 text-right">
+							<div class="mt-2 text-right" class:hidden={readonly}>
 								{#if confirmDelete === row.id}
 									<span class="text-sm">Delete these settings?</span>
 									<button

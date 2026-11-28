@@ -14,6 +14,8 @@ import type {
 	HumidityReading,
 	InventoryStats,
 	Location,
+	LocationShare,
+	ShareAccess,
 	Material,
 	NewHumidityReading,
 	NewLocation,
@@ -131,6 +133,11 @@ export const api = {
 	updateLocation: (id: string, body: NewLocation) =>
 		request<Location>('PUT', `/locations/${id}`, body),
 	deleteLocation: (id: string) => request<void>('DELETE', `/locations/${id}`),
+	locationShares: (id: string) => request<LocationShare[]>('GET', `/locations/${id}/shares`),
+	shareLocation: (id: string, username: string, access: ShareAccess) =>
+		request<LocationShare[]>('PUT', `/locations/${id}/shares`, { username, access }),
+	unshareLocation: (id: string, userId: string) =>
+		request<void>('DELETE', `/locations/${id}/shares/${userId}`),
 	printers: () => request<Printer[]>('GET', '/printers'),
 	createPrinter: (body: NewPrinter) => request<Printer>('POST', '/printers', body),
 	updatePrinter: (id: string, body: NewPrinter) => request<Printer>('PUT', `/printers/${id}`, body),

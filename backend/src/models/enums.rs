@@ -71,3 +71,37 @@ pub enum PrintSlotStatus {
     Logged,
     Skipped,
 }
+
+/// What another account may do in a shared location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "share_access", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum ShareAccess {
+    View,
+    Edit,
+}
+
+/// What the signed-in account may do with a spool or location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Access {
+    View,
+    Edit,
+    Owner,
+}
+
+impl Access {
+    /// From the database's `spool_access()` text.
+    pub fn parse(s: Option<&str>) -> Option<Self> {
+        match s? {
+            "owner" => Some(Self::Owner),
+            "edit" => Some(Self::Edit),
+            "view" => Some(Self::View),
+            _ => None,
+        }
+    }
+
+    pub fn can_edit(self) -> bool {
+        self >= Self::Edit
+    }
+}

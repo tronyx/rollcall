@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT s.user_id, u.username, s.access AS \"access: ShareAccess\"\n        FROM location_shares s JOIN users u ON u.id = s.user_id\n        WHERE s.location_id = $1\n        ORDER BY lower(u.username)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "access: ShareAccess",
+        "type_info": {
+          "Custom": {
+            "name": "share_access",
+            "kind": {
+              "Enum": [
+                "view",
+                "edit"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f2da32036e569507f32399209769f57a153b1f10e77a74f5b84a7996ebfe78a5"
+}

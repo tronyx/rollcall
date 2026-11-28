@@ -169,7 +169,7 @@
 					</div>
 					{#if removeId === u.id}
 						<span class="flex flex-wrap items-center gap-2">
-							<span class="text-xs">Remove {u.username}?</span>
+							<span class="text-xs">Remove {u.username} and their whole inventory?</span>
 							<button
 								type="button"
 								disabled={busy}

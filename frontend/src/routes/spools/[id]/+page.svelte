@@ -38,6 +38,8 @@
 	let sharedCount = $state<number | null>(null);
 	let loadError = $state<string | null>(null);
 
+	const canEdit = $derived(spool?.access !== 'view');
+	const isOwner = $derived(spool?.access === 'owner');
 	let editing = $state<'spool' | 'filament' | null>(null);
 	let busy = $state(false);
 	let actionError = $state<string | null>(null);
@@ -226,6 +228,11 @@
 						</p>
 						<p class="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500 dark:text-slate-400">
 							{#if spool.location_name}<span>📍 {spool.location_name}</span>{/if}
+							{#if spool.owner_username}<span>
+									{spool.owner_username}'s spool{spool.access === 'view'
+										? ', shared with you to view'
+										: ', shared with you to edit'}
+								</span>{/if}
 							{#if spool.label_code}<span class="font-mono">#{spool.label_code}</span>{/if}
 						</p>
 					</div>
@@ -255,7 +262,7 @@
 					</div>
 				</div>
 
-				<div class="mt-4 flex flex-wrap gap-2">
+				<div class="mt-4 flex flex-wrap gap-2" class:hidden={!canEdit}>
 					<button
 						type="button"
 						class={btn}
@@ -372,7 +379,7 @@
 									</p>
 									<p class="text-xs text-slate-500">→ {grams(ev.weight_after_g)}</p>
 								</div>
-								{#if i === 0 && ev.kind !== 'initial' && ev.delta_g !== 0}
+								{#if canEdit && i === 0 && ev.kind !== 'initial' && ev.delta_g !== 0}
 									<button
 										type="button"
 										class="text-xs font-semibold text-orange-700 dark:text-orange-400"
@@ -397,7 +404,7 @@
 			<section class={card}>
 				<div class="mb-2 flex items-center justify-between">
 					<h2 class="font-semibold">This spool</h2>
-					{#if editing !== 'spool'}
+					{#if editing !== 'spool' && canEdit}
 						<button
 							type="button"
 							class="text-sm font-semibold text-orange-700 dark:text-orange-400"
@@ -464,7 +471,7 @@
 				<section class={card}>
 					<div class="mb-2 flex items-center justify-between">
 						<h2 class="font-semibold">Filament</h2>
-						{#if editing !== 'filament'}
+						{#if editing !== 'filament' && isOwner}
 							<button
 								type="button"
 								class="text-sm font-semibold text-orange-700 dark:text-orange-400"
@@ -525,16 +532,17 @@
 			{/if}
 
 			{#if filament}
-				<TunedSettingsSection {filament} {card} />
+				<TunedSettingsSection {filament} {card} readonly={!isOwner} />
 			{/if}
 
-			<HumiditySection spoolId={spool.id} {card} />
+			<HumiditySection spoolId={spool.id} {card} readonly={!canEdit} />
 
 			<PhotosSection
 				owner={{ spool_id: spool.id }}
 				title="Photos of this spool"
 				hint="The label, the box, how it printed."
 				{card}
+				readonly={!canEdit}
 			/>
 			{#if filament}
 				<PhotosSection
@@ -544,11 +552,12 @@
 						? `Shared by all ${sharedCount} spools of this filament.`
 						: 'Shared by every spool of this filament.'}
 					{card}
+					readonly={!isOwner}
 				/>
 			{/if}
 
 			<!-- Delete -->
-			<section class={card}>
+			<section class={card} class:hidden={!isOwner}>
 				{#if confirmDelete}
 					<p class="text-sm">
 						Delete this spool and its weight history? This can't be undone. To keep the history, set

@@ -19,6 +19,19 @@ Rollcall asks you to sign in before it shows anything.
 
 A sign-in lasts 30 days from the last time you used it. Behind an HTTPS reverse proxy that sets `X-Forwarded-Proto: https`, the sign-in cookie is marked secure.
 
+## 🤝 Your inventory and sharing
+
+Each account has its own spools, filaments, locations, printers, equipment, prints, and settings. Other accounts can't see them. Brands and materials are one list for everyone.
+
+To let someone else see some of your spools, share a location with them. In **Settings › Locations**, select **Share** next to the location, then enter their username and pick an access level:
+
+- **Can view**: they see the spools in that location, with their weight history, humidity, photos, and tuned settings, but can't change anything.
+- **Can edit and add**: they can also log weight and prints, edit the spools, add humidity readings and photos, and add new spools to that location. Spools they add are still yours.
+
+Shared spools show the owner's name on the card. Only the owner can delete a spool, edit its filament or tuned settings, or take it out of the shared location. Someone with edit access can move a spool only between your locations that they can edit. A location shared with you is listed under **Shared with you**, where you can **Leave** it.
+
+When an admin removes an account, its whole inventory is removed with it.
+
 ## ➕ Adding a spool
 
 Select **+ Add spool**. Paste a product link from Amazon or a manufacturer's store and select **Fetch details**. Rollcall fills in the brand, material, color, weight, diameter, and recommended temperatures. Check the form before you save it:
@@ -195,6 +208,7 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET /api/auth/status` | Whether anyone is signed in, and whether registration is open |
 | `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/logout` | Sign in, create an account, sign out |
 | `PUT /api/account/password`; `GET`, `POST /api/account/tokens`; `DELETE /api/account/tokens/{id}` | Your password and API tokens |
+| `GET`, `PUT /api/locations/{id}/shares`; `DELETE /api/locations/{id}/shares/{user_id}` | Who your location is shared with; share it, change the access, or stop sharing |
 | `GET`, `POST /api/users`; `PUT`, `DELETE /api/users/{id}`; `PUT /api/users/{id}/password` | Accounts (admins only) |
 | `GET`, `PUT /api/admin/settings` | Whether registration is open (admins only) |
 | `GET /api/brands`, `GET /api/materials` | Lookup lists |

@@ -1,8 +1,8 @@
-use super::{contains_pattern, filaments};
+use super::{contains_pattern, filaments, lookups};
 use crate::{
     error::{AppError, AppResult},
     models::{
-        AcquisitionKind, CreateSpool, LocationKind, SpoolFilter, SpoolStatus, SpoolView,
+        Access, AcquisitionKind, CreateSpool, LocationKind, SpoolFilter, SpoolStatus, SpoolView,
         UpdateSpool, WeightAdjustment, WeightEvent, WeightEventKind, trim_opt,
     },
 };
@@ -15,6 +15,7 @@ const MAX_OVERFILL: Decimal = Decimal::from_parts(110, 0, 0, false, 2); // 1.10
 
 async fn query_spools(
     pool: &PgPool,
+    me: Uuid,
     id: Option<Uuid>,
     f: &SpoolFilter,
 ) -> AppResult<Vec<SpoolView>> {
@@ -38,14 +39,18 @@ async fn query_spools(
             b.id AS brand_id, b.name AS brand_name,
             m.id AS material_id, m.code AS material_code,
             l.id AS "location_id?", l.name AS "location_name?",
-            l.kind AS "location_kind?: LocationKind"
+            l.kind AS "location_kind?: LocationKind",
+            spool_access(s.owner_id, s.location_id, $11) AS "access!",
+            CASE WHEN s.owner_id = $11 THEN NULL ELSE u.username END AS "owner_username?"
         FROM spools s
+        JOIN users u          ON u.id = s.owner_id
         JOIN filaments f      ON f.id = s.filament_id
         JOIN brands b         ON b.id = f.brand_id
         JOIN materials m      ON m.id = f.material_id
         LEFT JOIN locations l ON l.id = s.location_id
-        CROSS JOIN app_settings st
-        WHERE ($1::uuid IS NULL OR s.id = $1)
+        JOIN user_settings st ON st.user_id = s.owner_id
+        WHERE spool_access(s.owner_id, s.location_id, $11) IS NOT NULL
+          AND ($1::uuid IS NULL OR s.id = $1)
           AND ($2::text IS NULL OR m.code = upper($2))
           AND ($3::text IS NULL OR m.family = upper($3) OR m.code = upper($3))
           AND ($4::uuid IS NULL OR f.brand_id = $4)
@@ -78,25 +83,75 @@ async fn query_spools(
         f.low_stock,
         f.include_empty,
         q,
+        me,
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
 }
 
-pub async fn list_spools(pool: &PgPool, filter: &SpoolFilter) -> AppResult<Vec<SpoolView>> {
-    query_spools(pool, None, filter).await
+pub async fn list_spools(
+    pool: &PgPool,
+    me: Uuid,
+    filter: &SpoolFilter,
+) -> AppResult<Vec<SpoolView>> {
+    query_spools(pool, me, None, filter).await
 }
 
-pub async fn get_spool(pool: &PgPool, id: Uuid) -> AppResult<SpoolView> {
-    query_spools(pool, Some(id), &SpoolFilter::default())
+pub async fn get_spool(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<SpoolView> {
+    query_spools(pool, me, Some(id), &SpoolFilter::default())
         .await?
         .into_iter()
         .next()
         .ok_or(AppError::NotFound("spool"))
 }
 
-pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolView> {
+/// What you may do with a spool, and who owns it. Not found if you can't see it.
+pub async fn access(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<(Access, Uuid)> {
+    let row = sqlx::query!(
+        r#"
+        SELECT spool_access(owner_id, location_id, $2) AS access, owner_id AS "owner_id!"
+        FROM spools WHERE id = $1 AND owner_id IS NOT NULL
+        "#,
+        id,
+        me
+    )
+    .fetch_optional(pool)
+    .await?
+    .ok_or(AppError::NotFound("spool"))?;
+    let access = Access::parse(row.access.as_deref()).ok_or(AppError::NotFound("spool"))?;
+    Ok((access, row.owner_id))
+}
+
+/// The spool's owner, if you may change the spool.
+pub async fn require_edit(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<Uuid> {
+    let (access, owner) = access(pool, me, id).await?;
+    if !access.can_edit() {
+        return Err(AppError::Forbidden(
+            "This spool is shared with you to view only.".into(),
+        ));
+    }
+    Ok(owner)
+}
+
+/// A filament must belong to the spool's owner.
+async fn check_filament_owner(pool: &PgPool, filament_id: Uuid, owner: Uuid) -> AppResult<()> {
+    let ok = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM filaments WHERE id = $1 AND owner_id = $2) AS "ok!""#,
+        filament_id,
+        owner
+    )
+    .fetch_one(pool)
+    .await?;
+    if !ok {
+        return Err(AppError::NotFound("filament"));
+    }
+    Ok(())
+}
+
+/// A spool in a location shared with you to edit belongs to the location's
+/// owner; any other new spool is yours.
+pub async fn create_spool(pool: &PgPool, me: Uuid, input: CreateSpool) -> AppResult<SpoolView> {
     if input.initial_weight_g <= Decimal::ZERO {
         return Err(AppError::BadRequest(
             "initial_weight_g must be positive".into(),
@@ -108,10 +163,18 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
         .map(|c| c.trim().to_ascii_uppercase())
         .filter(|c| !c.is_empty());
 
+    let owner = match input.location_id {
+        Some(loc) => lookups::editable_location_owner(pool, me, loc).await?,
+        None => me,
+    };
+    if let Some(id) = input.filament_id {
+        check_filament_owner(pool, id, owner).await?;
+    }
+
     let mut tx = pool.begin().await?;
     let filament_id = match (input.filament_id, input.filament) {
         (Some(id), None) => id,
-        (None, Some(new)) => filaments::find_or_create(&mut tx, new).await?,
+        (None, Some(new)) => filaments::find_or_create(&mut tx, owner, new).await?,
         _ => {
             return Err(AppError::BadRequest(
                 "provide exactly one of filament_id or filament".into(),
@@ -124,13 +187,14 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
         INSERT INTO spools (
             filament_id, label_code, location_id, status, initial_weight_g, remaining_weight_g,
             tare_weight_g, purchase_price, currency, purchase_date, vendor, lot_number, notes,
-            acquisition, discounted, discount_note, opened_at, emptied_at
+            acquisition, discounted, discount_note, opened_at, emptied_at, owner_id
         ) VALUES (
             $1, $2, $3, $4::spool_status, $5, $6, $7, $8,
-            coalesce($9, (SELECT default_currency FROM app_settings)),
+            coalesce($9, (SELECT default_currency FROM user_settings WHERE user_id = $17)),
             $10, $11, $12, $13, $14::acquisition_kind, $15, CASE WHEN $15 THEN $16 END,
             CASE WHEN $4::spool_status IN ('active', 'drying') THEN now() END,
-            CASE WHEN $4::spool_status = 'empty' THEN now() END
+            CASE WHEN $4::spool_status = 'empty' THEN now() END,
+            $17
         )
         RETURNING id
         "#,
@@ -150,6 +214,7 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
         input.acquisition as AcquisitionKind,
         input.discounted,
         trim_opt(input.discount_note),
+        owner,
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -166,10 +231,34 @@ pub async fn create_spool(pool: &PgPool, input: CreateSpool) -> AppResult<SpoolV
     .await?;
 
     tx.commit().await?;
-    get_spool(pool, spool_id).await
+    get_spool(pool, me, spool_id).await
 }
 
-pub async fn update_spool(pool: &PgPool, id: Uuid, input: UpdateSpool) -> AppResult<SpoolView> {
+/// Someone with edit access can move a spool only between the owner's
+/// locations that are shared with them to edit.
+pub async fn update_spool(
+    pool: &PgPool,
+    me: Uuid,
+    id: Uuid,
+    input: UpdateSpool,
+) -> AppResult<SpoolView> {
+    let owner = require_edit(pool, me, id).await?;
+    check_filament_owner(pool, input.filament_id, owner).await?;
+    match input.location_id {
+        Some(loc) => {
+            if lookups::editable_location_owner(pool, me, loc).await? != owner {
+                return Err(AppError::BadRequest(
+                    "A spool can only move between its owner's locations.".into(),
+                ));
+            }
+        }
+        None if owner != me => {
+            return Err(AppError::BadRequest(
+                "Only the owner can take a spool out of a shared location.".into(),
+            ));
+        }
+        None => {}
+    }
     let res = sqlx::query!(
         r#"
         UPDATE spools SET
@@ -217,10 +306,16 @@ pub async fn update_spool(pool: &PgPool, id: Uuid, input: UpdateSpool) -> AppRes
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("spool"));
     }
-    get_spool(pool, id).await
+    get_spool(pool, me, id).await
 }
 
-pub async fn delete_spool(pool: &PgPool, id: Uuid) -> AppResult<()> {
+/// Only the owner can delete a spool.
+pub async fn delete_spool(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<()> {
+    if access(pool, me, id).await?.0 != Access::Owner {
+        return Err(AppError::Forbidden(
+            "Only the spool's owner can delete it.".into(),
+        ));
+    }
     let res = sqlx::query!("DELETE FROM spools WHERE id = $1", id)
         .execute(pool)
         .await?;
@@ -241,9 +336,11 @@ pub struct WeightChange {
 /// logging the event and moving the status along (sealed → active → empty).
 pub async fn adjust_weight(
     pool: &PgPool,
+    me: Uuid,
     spool_id: Uuid,
     input: WeightAdjustment,
 ) -> AppResult<WeightChange> {
+    require_edit(pool, me, spool_id).await?;
     let mut tx = pool.begin().await?;
     let cur = sqlx::query!(
         r#"
@@ -313,16 +410,18 @@ pub async fn adjust_weight(
 
     tx.commit().await?;
     Ok(WeightChange {
-        spool: get_spool(pool, spool_id).await?,
+        spool: get_spool(pool, me, spool_id).await?,
         event,
     })
 }
 
 pub async fn weight_history(
     pool: &PgPool,
+    me: Uuid,
     spool_id: Uuid,
     limit: i64,
 ) -> AppResult<Vec<WeightEvent>> {
+    access(pool, me, spool_id).await?;
     Ok(sqlx::query_as!(
         WeightEvent,
         r#"

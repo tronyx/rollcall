@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id FROM prints\n        WHERE owner_id = $3 AND fingerprint = $1\n          AND created_at > now() - make_interval(mins => $2)\n        ORDER BY created_at DESC LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fef7ac7a1e16fc3891e44999d5311cbde5590c97d5f4a6c7c036f6915ca3fa6d"
+}

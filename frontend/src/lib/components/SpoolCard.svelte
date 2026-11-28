@@ -100,6 +100,11 @@
 			</p>
 			<p class="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500 dark:text-slate-400">
 				{#if spool.location_name}<span>📍 {spool.location_name}</span>{/if}
+				{#if spool.owner_username}<span
+						class="rounded-full bg-violet-100 px-2 text-violet-800 dark:bg-violet-950 dark:text-violet-200"
+					>
+						{spool.owner_username}'s{spool.access === 'view' ? ' · view only' : ''}
+					</span>{/if}
 				{#if spool.label_code}<span class="font-mono">#{spool.label_code}</span>{/if}
 				{#if Number(spool.diameter_mm) !== 1.75}<span>{spool.diameter_mm} mm</span>{/if}
 			</p>
@@ -161,7 +166,7 @@
 				Cancel
 			</button>
 		</form>
-	{:else}
+	{:else if spool.access !== 'view'}
 		<div class="flex gap-2">
 			<button
 				type="button"

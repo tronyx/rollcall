@@ -1,5 +1,6 @@
 use crate::{
     AppState,
+    auth::CurrentUser,
     error::AppResult,
     models::{Filament, NewFilament},
     repo::filaments,
@@ -20,21 +21,31 @@ pub fn routes() -> Router<AppState> {
         .route("/filaments/parse-url", post(parse_url))
 }
 
-async fn list(State(s): State<AppState>) -> AppResult<Json<Vec<Filament>>> {
-    Ok(Json(filaments::list_filaments(&s.pool).await?))
+async fn list(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+) -> AppResult<Json<Vec<Filament>>> {
+    Ok(Json(filaments::list_filaments(&s.pool, me.id).await?))
 }
 
-async fn show(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<Json<Filament>> {
-    Ok(Json(filaments::get_filament(&s.pool, id).await?))
+async fn show(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Filament>> {
+    Ok(Json(filaments::get_filament(&s.pool, me.id, id).await?))
 }
 
 /// `PUT /api/filaments/{id}`: same body as an inline filament on a new spool.
 async fn update(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     Path(id): Path<Uuid>,
     Json(body): Json<NewFilament>,
 ) -> AppResult<Json<Filament>> {
-    Ok(Json(filaments::update_filament(&s.pool, id, body).await?))
+    Ok(Json(
+        filaments::update_filament(&s.pool, me.id, id, body).await?,
+    ))
 }
 
 #[derive(Deserialize)]

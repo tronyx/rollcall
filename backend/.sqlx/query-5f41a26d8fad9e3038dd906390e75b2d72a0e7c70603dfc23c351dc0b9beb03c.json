@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM location_shares s USING locations l\n        WHERE s.location_id = $1 AND s.user_id = $2 AND l.id = s.location_id\n          AND (l.owner_id = $3 OR s.user_id = $3)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5f41a26d8fad9e3038dd906390e75b2d72a0e7c70603dfc23c351dc0b9beb03c"
+}

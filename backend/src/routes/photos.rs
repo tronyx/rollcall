@@ -1,5 +1,6 @@
 use crate::{
     AppState,
+    auth::CurrentUser,
     error::{AppError, AppResult},
     models::{Photo, PhotoOwner, sniff_image},
     repo::photos,
@@ -33,13 +34,18 @@ pub fn routes() -> Router<AppState> {
 
 async fn list(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     Query(owner): Query<PhotoOwner>,
 ) -> AppResult<Json<Vec<Photo>>> {
-    Ok(Json(photos::list(&s.pool, &owner).await?))
+    Ok(Json(photos::list(&s.pool, me.id, &owner).await?))
 }
 
-async fn show(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<Json<Photo>> {
-    Ok(Json(photos::get(&s.pool, id).await?.0))
+async fn show(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Photo>> {
+    Ok(Json(photos::get(&s.pool, me.id, id).await?.0))
 }
 
 fn bad(msg: impl Into<String>) -> AppError {
@@ -50,6 +56,7 @@ fn bad(msg: impl Into<String>) -> AppError {
 /// `filament_id` or `equipment_id`, a `file`, and an optional `caption`.
 async fn upload(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     mut form: Multipart,
 ) -> AppResult<(StatusCode, Json<Photo>)> {
     let mut owner = PhotoOwner::default();
@@ -96,6 +103,7 @@ async fn upload(
         .ok_or_else(|| bad("that isn't a JPEG, PNG, WebP, GIF or AVIF image"))?;
     let photo = photos::add(
         &s.pool,
+        me.id,
         &s.uploads,
         &owner,
         &bytes,
@@ -115,20 +123,31 @@ struct CaptionBody {
 
 async fn caption(
     State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
     Path(id): Path<Uuid>,
     Json(body): Json<CaptionBody>,
 ) -> AppResult<Json<Photo>> {
-    Ok(Json(photos::set_caption(&s.pool, id, body.caption).await?))
+    Ok(Json(
+        photos::set_caption(&s.pool, me.id, id, body.caption).await?,
+    ))
 }
 
-async fn remove(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<StatusCode> {
-    photos::delete(&s.pool, &s.uploads, id).await?;
+async fn remove(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    photos::delete(&s.pool, me.id, &s.uploads, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// The image itself. A photo's file never changes, so browsers may cache it for good.
-async fn file(State(s): State<AppState>, Path(id): Path<Uuid>) -> AppResult<Response> {
-    let (photo, file_name) = photos::get(&s.pool, id).await?;
+async fn file(
+    State(s): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Response> {
+    let (photo, file_name) = photos::get(&s.pool, me.id, id).await?;
     let bytes = tokio::fs::read(s.uploads.join(&file_name))
         .await
         .map_err(|_| AppError::NotFound("photo file"))?;

@@ -631,7 +631,7 @@ async fn tuned_settings_per_printer(pool: PgPool) {
         Some(json!({ "printer_id": "0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f" })),
     )
     .await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(status, StatusCode::NOT_FOUND, "not one of your printers");
     let missing = "/filaments/0193b0c4-8a7e-7c1e-9d2f-5b1a2c3d4e5f/tuned";
     let (status, _) = call(&app, Method::GET, missing, None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
@@ -1156,14 +1156,14 @@ async fn photos(pool: PgPool) {
     let (status, _) = call(&app, Method::DELETE, &format!("/equipment/{item_id}"), None).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(files(), 1);
-    let (_, list) = call(
+    let (status, _) = call(
         &app,
         Method::GET,
         &format!("/photos?equipment_id={item_id}"),
         None,
     )
     .await;
-    assert_eq!(list.as_array().unwrap().len(), 0);
+    assert_eq!(status, StatusCode::NOT_FOUND);
 
     // The startup sweep removes stray files the app wrote, and nothing else.
     std::fs::write(dir.join(format!("{}.png", uuid::Uuid::now_v7())), png).unwrap();
@@ -1699,4 +1699,282 @@ async fn accounts_and_sign_in(pool: PgPool) {
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, _, users) = send(&app, Method::GET, "/users", None, Some(chris)).await;
     assert_eq!(users.as_array().unwrap().len(), 2);
+}
+
+/// The API signed in as a new account (the first one made is the admin).
+async fn as_user(pool: &PgPool, username: &str) -> (Router, String) {
+    let hash = rollcall::auth::hash_password("test password")
+        .await
+        .unwrap();
+    let user = rollcall::repo::accounts::create_user(pool, username, &hash, true)
+        .await
+        .unwrap();
+    let secret = rollcall::auth::new_secret();
+    rollcall::repo::accounts::create_token(
+        pool,
+        user.id,
+        "tests",
+        &rollcall::auth::hash_secret(&secret),
+    )
+    .await
+    .unwrap();
+    let bearer = HeaderValue::from_str(&format!("Bearer {secret}")).unwrap();
+    let app = routes::api(state(pool.clone())).layer(axum::middleware::map_request(
+        move |mut req: Request<Body>| {
+            let bearer = bearer.clone();
+            async move {
+                req.headers_mut().insert(header::AUTHORIZATION, bearer);
+                req
+            }
+        },
+    ));
+    (app, user.id.to_string())
+}
+
+#[sqlx::test]
+async fn separate_inventories_and_shared_locations(pool: PgPool) {
+    // Data from before accounts belongs to the first account.
+    sqlx::query("INSERT INTO locations (name, kind) VALUES ('Old shelf', 'shelf')")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (alice, _) = as_user(&pool, "alice").await;
+    let (bob, bob_id) = as_user(&pool, "bob").await;
+    let (_, locs) = call(&alice, Method::GET, "/locations", None).await;
+    assert_eq!(locs[0]["name"], "Old shelf");
+    assert_eq!(locs[0]["access"], "owner");
+    let (_, locs) = call(&bob, Method::GET, "/locations", None).await;
+    assert_eq!(locs.as_array().unwrap().len(), 0);
+
+    // Alice's spool in her location is invisible to Bob.
+    let (_, shelf) = call(
+        &alice,
+        Method::POST,
+        "/locations",
+        Some(json!({ "name": "Shelf", "kind": "shelf" })),
+    )
+    .await;
+    let shelf_id = shelf["id"].as_str().unwrap().to_string();
+    let mut body = new_spool("Black", "000", 800.0);
+    body["location_id"] = json!(shelf_id);
+    body["label_code"] = json!("R-1");
+    let (status, spool) = call(&alice, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{spool}");
+    assert_eq!(spool["access"], "owner");
+    assert!(spool["owner_username"].is_null());
+    let spool_uri = format!("/spools/{}", spool["id"].as_str().unwrap());
+    let filament_id = spool["filament_id"].as_str().unwrap().to_string();
+
+    let (_, list) = call(&bob, Method::GET, "/spools", None).await;
+    assert_eq!(list.as_array().unwrap().len(), 0);
+    let (status, _) = call(&bob, Method::GET, &spool_uri, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = call(
+        &bob,
+        Method::GET,
+        &format!("/filaments/{filament_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (_, stats) = call(&bob, Method::GET, "/stats", None).await;
+    assert_eq!(stats["spools_in_stock"], 0);
+
+    // Bob's own copy of the same filament and label code is his own.
+    let mut body = new_spool("Black", "000", 500.0);
+    body["label_code"] = json!("R-1");
+    let (status, bobs) = call(&bob, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{bobs}");
+    assert_ne!(bobs["filament_id"].as_str().unwrap(), filament_id);
+    let (status, _) = call(
+        &bob,
+        Method::PUT,
+        &format!("/filaments/{filament_id}"),
+        Some(json!({ "brand_name": "x", "material_code": "PLA", "color_name": "x" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let mut body = new_spool("White", "fff", 500.0);
+    body["location_id"] = json!(shelf_id);
+    let (status, _) = call(&bob, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "not his location");
+
+    // Shared to view: Bob sees the spool but can't change it.
+    let shares = format!("/locations/{shelf_id}/shares");
+    let (status, _) = call(
+        &alice,
+        Method::PUT,
+        &shares,
+        Some(json!({ "username": "nobody", "access": "view" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, list) = call(
+        &alice,
+        Method::PUT,
+        &shares,
+        Some(json!({ "username": "BOB", "access": "view" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{list}");
+    assert_eq!(list[0]["username"], "bob");
+    let (status, _) = call(&bob, Method::GET, &shares, None).await;
+    assert_eq!(
+        status,
+        StatusCode::NOT_FOUND,
+        "only the owner sees the shares"
+    );
+    let (_, locs) = call(&bob, Method::GET, "/locations", None).await;
+    assert_eq!(locs[0]["name"], "Shelf");
+    assert_eq!(locs[0]["access"], "view");
+    assert_eq!(locs[0]["owner_username"], "alice");
+    let (_, locs) = call(&alice, Method::GET, "/locations", None).await;
+    let shelf = locs
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|l| l["name"] == "Shelf")
+        .unwrap();
+    assert_eq!(shelf["share_count"], 1);
+
+    let (status, seen) = call(&bob, Method::GET, &spool_uri, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(seen["access"], "view");
+    assert_eq!(seen["owner_username"], "alice");
+    let (_, list) = call(&bob, Method::GET, "/spools", None).await;
+    assert_eq!(list.as_array().unwrap().len(), 2);
+    let (_, stats) = call(&bob, Method::GET, "/stats", None).await;
+    assert_eq!(stats["spools_in_stock"], 2);
+    let (status, _) = call(
+        &bob,
+        Method::GET,
+        &format!("/filaments/{filament_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = call(
+        &bob,
+        Method::GET,
+        &format!("/filaments/{filament_id}/tuned"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let deduct = json!({ "kind": "quick_adjust", "delta_g": -10 });
+    let (status, _) = call(
+        &bob,
+        Method::POST,
+        &format!("{spool_uri}/weight"),
+        Some(deduct.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _) = call(
+        &bob,
+        Method::POST,
+        &format!("{spool_uri}/humidity"),
+        Some(json!({ "humidity_pct": 30 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _) = call(
+        &bob,
+        Method::GET,
+        &format!("/photos?spool_id={}", spool["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Shared to edit: Bob can use and add spools there; they stay Alice's.
+    call(
+        &alice,
+        Method::PUT,
+        &shares,
+        Some(json!({ "username": "bob", "access": "edit" })),
+    )
+    .await;
+    let (status, change) = call(
+        &bob,
+        Method::POST,
+        &format!("{spool_uri}/weight"),
+        Some(deduct),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{change}");
+    assert_eq!(change["spool"]["remaining_weight_g"], 790.0);
+    let mut body = new_spool("White", "fff", 500.0);
+    body["location_id"] = json!(shelf_id);
+    let (status, added) = call(&bob, Method::POST, "/spools", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{added}");
+    assert_eq!(added["access"], "edit");
+    assert_eq!(added["owner_username"], "alice");
+    let (status, mine) = call(
+        &alice,
+        Method::GET,
+        &format!("/spools/{}", added["id"].as_str().unwrap()),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(mine["access"], "owner");
+
+    let (_, current) = call(&bob, Method::GET, &spool_uri, None).await;
+    let mut edit = current.clone();
+    edit["location_id"] = Value::Null;
+    let (status, _) = call(&bob, Method::PUT, &spool_uri, Some(edit)).await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "can't take it out of the share"
+    );
+    let mut edit = current.clone();
+    let (_, bob_box) = call(
+        &bob,
+        Method::POST,
+        "/locations",
+        Some(json!({ "name": "Bob's box" })),
+    )
+    .await;
+    edit["location_id"] = bob_box["id"].clone();
+    edit["notes"] = json!("used by Bob");
+    let (status, saved) = call(&bob, Method::PUT, &spool_uri, Some(edit)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{saved}");
+    let mut edit = current.clone();
+    edit["notes"] = json!("used by Bob");
+    let (status, saved) = call(&bob, Method::PUT, &spool_uri, Some(edit)).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert_eq!(saved["notes"], "used by Bob");
+    let (status, _) = call(&bob, Method::DELETE, &spool_uri, None).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+
+    // Settings are per account.
+    call(
+        &bob,
+        Method::PUT,
+        "/settings",
+        Some(json!({ "low_stock_threshold_g": 900, "default_currency": "EUR" })),
+    )
+    .await;
+    let (_, a) = call(&alice, Method::GET, "/settings", None).await;
+    assert_eq!(a["low_stock_threshold_g"], 200.0);
+    assert_eq!(a["default_currency"], "USD");
+
+    // Bob can leave; Alice can stop sharing.
+    let (status, _) = call(&bob, Method::DELETE, &format!("{shares}/{bob_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = call(&bob, Method::GET, &spool_uri, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    call(
+        &alice,
+        Method::PUT,
+        &shares,
+        Some(json!({ "username": "bob", "access": "view" })),
+    )
+    .await;
+    let (status, _) = call(&alice, Method::DELETE, &format!("{shares}/{bob_id}"), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, list) = call(&bob, Method::GET, "/spools", None).await;
+    assert_eq!(list.as_array().unwrap().len(), 1);
 }

@@ -9,6 +9,7 @@
 		title = 'Photos',
 		hint = '',
 		card = '',
+		readonly = false,
 		onchange
 	}: {
 		owner: PhotoOwner;
@@ -17,6 +18,8 @@
 		hint?: string;
 		/** Card classes; leave empty to render without a card (inside a form). */
 		card?: string;
+		/** Show the photos without upload, caption or delete. */
+		readonly?: boolean;
 		/** Called with the photos after each upload or delete. */
 		onchange?: (photos: Photo[]) => void;
 	} = $props();
@@ -138,7 +141,7 @@
 			<h2 class={card ? 'font-semibold' : 'text-sm font-semibold'}>{title}</h2>
 			{#if hint}<p class="text-xs text-slate-500 dark:text-slate-400">{hint}</p>{/if}
 		</div>
-		{#if loaded}
+		{#if loaded && !readonly}
 			<button
 				type="button"
 				class={link}
@@ -264,13 +267,15 @@
 						</button>
 					{:else}
 						<a href={current.url} target="_blank" rel="noopener" class={link}>Full size</a>
-						<button
-							type="button"
-							class="font-medium text-slate-500 hover:text-red-600"
-							onclick={() => (confirmDelete = true)}
-						>
-							Delete…
-						</button>
+						{#if !readonly}
+							<button
+								type="button"
+								class="font-medium text-slate-500 hover:text-red-600"
+								onclick={() => (confirmDelete = true)}
+							>
+								Delete…
+							</button>
+						{/if}
 					{/if}
 					<button type="button" class={link} onclick={() => dialog?.close()}>Close</button>
 				</div>

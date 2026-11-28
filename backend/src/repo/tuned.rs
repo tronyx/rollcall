@@ -6,12 +6,13 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 /// The settings for one filament: the any-printer row first, then by printer name.
-pub async fn list_for_filament(pool: &PgPool, filament_id: Uuid) -> AppResult<Vec<TunedSettings>> {
-    // A missing filament is a 404, not an empty list.
-    sqlx::query_scalar!("SELECT id FROM filaments WHERE id = $1", filament_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(AppError::NotFound("filament"))?;
+pub async fn list_for_filament(
+    pool: &PgPool,
+    me: Uuid,
+    filament_id: Uuid,
+) -> AppResult<Vec<TunedSettings>> {
+    // A filament you can't see is a 404, not an empty list.
+    super::filaments::access(pool, me, filament_id).await?;
     Ok(sqlx::query_as!(
         TunedSettings,
         r#"
@@ -35,13 +36,23 @@ pub async fn list_for_filament(pool: &PgPool, filament_id: Uuid) -> AppResult<Ve
 /// is a 404; an unknown printer fails its foreign key (422).
 pub async fn save(
     pool: &PgPool,
+    me: Uuid,
     filament_id: Uuid,
     input: SaveTunedSettings,
 ) -> AppResult<TunedSettings> {
-    sqlx::query_scalar!("SELECT id FROM filaments WHERE id = $1", filament_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(AppError::NotFound("filament"))?;
+    super::filaments::require_owner(pool, me, filament_id).await?;
+    if let Some(printer) = input.printer_id {
+        let mine = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM printers WHERE id = $1 AND owner_id = $2) AS "mine!""#,
+            printer,
+            me
+        )
+        .fetch_one(pool)
+        .await?;
+        if !mine {
+            return Err(AppError::NotFound("printer"));
+        }
+    }
     let notes = trim_opt(input.notes);
     let id = sqlx::query_scalar!(
         r#"
@@ -89,17 +100,24 @@ pub async fn save(
     )
     .fetch_one(pool)
     .await?;
-    list_for_filament(pool, filament_id)
+    list_for_filament(pool, me, filament_id)
         .await?
         .into_iter()
         .find(|t| t.id == id)
         .ok_or(AppError::NotFound("tuned settings"))
 }
 
-pub async fn delete(pool: &PgPool, id: Uuid) -> AppResult<()> {
-    let res = sqlx::query!("DELETE FROM tuned_settings WHERE id = $1", id)
-        .execute(pool)
-        .await?;
+pub async fn delete(pool: &PgPool, me: Uuid, id: Uuid) -> AppResult<()> {
+    let res = sqlx::query!(
+        r#"
+        DELETE FROM tuned_settings t USING filaments f
+        WHERE t.id = $1 AND f.id = t.filament_id AND f.owner_id = $2
+        "#,
+        id,
+        me
+    )
+    .execute(pool)
+    .await?;
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("tuned settings"));
     }

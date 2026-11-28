@@ -43,7 +43,7 @@ const IN_USE = new Set(['active', 'drying', 'sealed']);
 /**
  * The spools to offer for a slot, likeliest first: the preset's known
  * filament, then the same material, then the closest color. Empty and
- * archived spools are left out.
+ * archived spools, and spools shared with you to view only, are left out.
  */
 export function spoolChoices(slot: PrintSlot, spools: Spool[]): Spool[] {
 	const type = slot.filament_type?.toUpperCase() ?? null;
@@ -52,7 +52,9 @@ export function spoolChoices(slot: PrintSlot, spools: Spool[]): Spool[] {
 		(type && s.material_code.toUpperCase().startsWith(type) ? 0 : 1_000) +
 		(s.status === 'sealed' ? 100 : 0) +
 		colorDistance(slot.color_hex, s.color_hex) / 10;
-	return spools.filter((s) => IN_USE.has(s.status)).sort((a, b) => score(a) - score(b));
+	return spools
+		.filter((s) => IN_USE.has(s.status) && s.access !== 'view')
+		.sort((a, b) => score(a) - score(b));
 }
 
 /** "Bambu Lab PLA Basic · Jade White · #R-0001". */

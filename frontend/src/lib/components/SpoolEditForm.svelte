@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { locationLabel, placeable } from '#lib/util/locations.ts';
 	import AcquisitionFields from '#lib/components/AcquisitionFields.svelte';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type { Location, Spool, SpoolStatus } from '#lib/api/types.ts';
@@ -95,8 +96,10 @@
 	<label class="col-span-2 sm:col-span-1">
 		<span class={label}>Location</span>
 		<select bind:value={form.location_id} class={input}>
-			<option value="">None</option>
-			{#each locations as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
+			{#if !spool.owner_username}<option value="">None</option>{/if}
+			{#each placeable(locations, spool) as l (l.id)}<option value={l.id}>
+					{locationLabel(l)}
+				</option>{/each}
 		</select>
 	</label>
 	<label>

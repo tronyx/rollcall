@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT l.id, l.name, l.kind AS \"kind: LocationKind\", l.description, l.sort_order,\n               CASE WHEN l.owner_id = $1 THEN 'owner' ELSE ls.access::text END AS \"access!\",\n               CASE WHEN l.owner_id = $1 THEN NULL ELSE u.username END AS owner_username,\n               (SELECT count(*) FROM location_shares x WHERE x.location_id = l.id\n                  AND l.owner_id = $1) AS \"share_count!\"\n        FROM locations l\n        LEFT JOIN location_shares ls ON ls.location_id = l.id AND ls.user_id = $1\n        LEFT JOIN users u ON u.id = l.owner_id\n        WHERE l.owner_id = $1 OR ls.user_id IS NOT NULL\n        ORDER BY l.owner_id <> $1, u.username, l.sort_order, lower(l.name)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "kind: LocationKind",
+        "type_info": {
+          "Custom": {
+            "name": "location_kind",
+            "kind": {
+              "Enum": [
+                "dry_box",
+                "ams_slot",
+                "printer",
+                "dryer",
+                "shelf",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "access!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "owner_username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "share_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "19367e19d62c7bf1dbf498472a77277bb2df8e9a839bd8f14f50d197d568c2c7"
+}

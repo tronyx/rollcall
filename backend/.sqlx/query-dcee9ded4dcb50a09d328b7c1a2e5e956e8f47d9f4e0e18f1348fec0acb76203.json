@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO user_settings (user_id, low_stock_threshold_g, default_currency)\n        SELECT $1, low_stock_threshold_g, default_currency FROM app_settings\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dcee9ded4dcb50a09d328b7c1a2e5e956e8f47d9f4e0e18f1348fec0acb76203"
+}
