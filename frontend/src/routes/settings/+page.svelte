@@ -2,8 +2,11 @@
 	import { resolve } from '$app/paths';
 	import { api, ApiError } from '#lib/api/client.ts';
 	import type { AppSettings, Location, Printer } from '#lib/api/types.ts';
+	import AccountSettings from '#lib/components/AccountSettings.svelte';
 	import LocationsSettings from '#lib/components/LocationsSettings.svelte';
 	import PrintersSettings from '#lib/components/PrintersSettings.svelte';
+	import UsersSettings from '#lib/components/UsersSettings.svelte';
+	import { session } from '#lib/state/session.svelte.ts';
 	import { onMount } from 'svelte';
 
 	let settings = $state<AppSettings | null>(null);
@@ -125,5 +128,13 @@
 		<section class={card}>
 			<PrintersSettings bind:printers />
 		</section>
+		<section class="{card} lg:col-span-2">
+			<AccountSettings />
+		</section>
+		{#if session.user?.is_admin}
+			<section class="{card} lg:col-span-2">
+				<UsersSettings />
+			</section>
+		{/if}
 	</div>
 {/if}

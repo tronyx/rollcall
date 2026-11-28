@@ -2,6 +2,23 @@
 
 [← All documentation](README.md)
 
+## 🔐 Accounts and signing in
+
+Rollcall asks you to sign in before it shows anything.
+
+- **The first account is the admin.** On a new install, or the first time you open Rollcall after updating to a version with sign-in, the login page asks you to create the admin account. Do it right away, before anyone else on your network can.
+- **Registration is off by default.** The admin can turn on **Let people create their own accounts** in **Settings › Accounts**. While it's off, the login page has no sign-up, and only the admin can add accounts.
+- **The admin manages accounts** in **Settings › Accounts**: add one, make another account an admin, reset a password, or remove an account. There's always at least one admin, and you can't remove your own account.
+- **Your account** in **Settings** changes your password (which signs out your other devices) and signs you out.
+- **API tokens**, also in **Settings › Your account**, let scripts sign in as you. Rollcall shows a new token once, so copy it then. A token can do anything your account can, so delete the ones you don't use. Scripts send it as `Authorization: Bearer <token>`.
+- **Forgot your password?** Ask the admin to reset it. If you're the only admin, run this in the container to get a new random password:
+
+  ```bash
+  docker compose exec rollcall rollcall reset-password USERNAME
+  ```
+
+A sign-in lasts 30 days from the last time you used it. Behind an HTTPS reverse proxy that sets `X-Forwarded-Proto: https`, the sign-in cookie is marked secure.
+
 ## ➕ Adding a spool
 
 Select **+ Add spool**. Paste a product link from Amazon or a manufacturer's store and select **Fetch details**. Rollcall fills in the brand, material, color, weight, diameter, and recommended temperatures. Check the form before you save it:
@@ -93,14 +110,15 @@ Rollcall can take the filament each print uses off the right spool by itself. Or
 ### Set it up once
 
 1. On the **Prints** page, open **Log prints from your slicer automatically** and download `rollcall-print.py`. It needs Python 3 and nothing else.
-2. In the slicer's process settings, under **Others › Post-processing Scripts**, add the line the page shows, with the script's path. For example:
+2. Create an [API token](#-accounts-and-signing-in) under **Settings › Your account**, and copy it.
+3. In the slicer's process settings, under **Others › Post-processing Scripts**, add the line the page shows, with the script's path and your token. For example:
 
    ```text
-   "/usr/bin/python3" "/home/me/rollcall-print.py" --url http://rollcall.local:8080
+   "/usr/bin/python3" "/home/me/rollcall-print.py" --url http://rollcall.local:8080 --token rc_...
    ```
 
-   On Windows, use the full path to `python.exe`. Save the process preset so every print uses it.
-3. Tell Rollcall which filament each slicer preset is. Either [export the preset](#-export-to-your-slicer) from Rollcall and use it in the slicer, or pick the spool on the **Prints** page the first time a preset shows up. Rollcall remembers it after that.
+   On Windows, use the full path to `python.exe`. Save the process preset so every print uses it. Instead of `--token`, you can set the `ROLLCALL_TOKEN` environment variable.
+4. Tell Rollcall which filament each slicer preset is. Either [export the preset](#-export-to-your-slicer) from Rollcall and use it in the slicer, or pick the spool on the **Prints** page the first time a preset shows up. Rollcall remembers it after that.
 
 The script sends only the slicer's comment lines, a few kilobytes, and never changes the G-code. If Rollcall can't be reached, the script says so and lets the slicer finish the export.
 
@@ -147,11 +165,13 @@ When something wears out or you give it away, edit it and tick **Retired**. Reti
 
 ## ⚙️ Settings
 
-Select **⚙️ Settings** at the top of the list. The settings page has three parts:
+Select **⚙️ Settings** at the top of the list. The settings page has these parts:
 
 - **General**: the weight under which a spool counts as low stock (200 g by default), and the currency for new spools that don't name one.
 - **Locations**: add, rename, reorder, and delete the places where your spools live. Lower order numbers come first in lists. When you delete a location, its spools keep everything else and just lose the location.
 - **Printers**: add your printers with their nozzle size, and pick one as the default. Tuned print settings per printer will use these.
+- **Your account**: change your password, sign out, and manage [API tokens](#-accounts-and-signing-in).
+- **Accounts** (admins only): turn registration on or off, and manage accounts.
 
 ## 📊 Dashboard
 
@@ -172,6 +192,11 @@ The web interface uses a JSON API under `/api`. The main endpoints are:
 | `GET`, `PUT /api/filaments/{id}/tuned`; `DELETE /api/tuned/{id}` | Tuned settings for a filament, per printer or for any printer |
 | `GET`, `POST /api/spools/{id}/humidity`; `DELETE /api/humidity/{id}` | A spool's humidity readings |
 | `POST /api/filaments/parse-url` | Read a product page and return a draft |
+| `GET /api/auth/status` | Whether anyone is signed in, and whether registration is open |
+| `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/logout` | Sign in, create an account, sign out |
+| `PUT /api/account/password`; `GET`, `POST /api/account/tokens`; `DELETE /api/account/tokens/{id}` | Your password and API tokens |
+| `GET`, `POST /api/users`; `PUT`, `DELETE /api/users/{id}`; `PUT /api/users/{id}/password` | Accounts (admins only) |
+| `GET`, `PUT /api/admin/settings` | Whether registration is open (admins only) |
 | `GET /api/brands`, `GET /api/materials` | Lookup lists |
 | `GET`, `POST /api/locations`; `PUT`, `DELETE /api/locations/{id}` | Storage locations |
 | `GET`, `POST /api/printers`; `PUT`, `DELETE /api/printers/{id}` | Printers |

@@ -15,6 +15,10 @@ pub enum AppError {
     BadRequest(String),
     #[error("{0}")]
     Conflict(String),
+    #[error("{0}")]
+    Unauthorized(String),
+    #[error("{0}")]
+    Forbidden(String),
     #[error(transparent)]
     Database(#[from] sqlx::Error),
     #[error(transparent)]
@@ -27,6 +31,8 @@ impl AppError {
             Self::NotFound(_) => (StatusCode::NOT_FOUND, "not_found", self.to_string()),
             Self::BadRequest(m) => (StatusCode::BAD_REQUEST, "bad_request", m.clone()),
             Self::Conflict(m) => (StatusCode::CONFLICT, "conflict", m.clone()),
+            Self::Unauthorized(m) => (StatusCode::UNAUTHORIZED, "unauthorized", m.clone()),
+            Self::Forbidden(m) => (StatusCode::FORBIDDEN, "forbidden", m.clone()),
             Self::Database(sqlx::Error::RowNotFound) => (
                 StatusCode::NOT_FOUND,
                 "not_found",

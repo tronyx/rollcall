@@ -4,11 +4,14 @@
 Add this as a post-processing script in the slicer (Process > Others >
 Post-processing Scripts), with your Rollcall address:
 
-    "/usr/bin/python3" "/path/to/rollcall-print.py" --url http://rollcall.local:8080
+    "/usr/bin/python3" "/path/to/rollcall-print.py" --url http://rollcall.local:8080 --token rc_...
 
 On Windows:
 
-    "C:\\Path\\To\\python.exe" "C:\\Path\\To\\rollcall-print.py" --url http://rollcall.local:8080
+    "C:\\Path\\To\\python.exe" "C:\\Path\\To\\rollcall-print.py" --url http://rollcall.local:8080 --token rc_...
+
+Create the token in Rollcall under Settings > API tokens. Instead of --token,
+you can set the ROLLCALL_TOKEN environment variable.
 
 The slicer adds the G-code file's path at the end. The script sends Rollcall
 only the slicer's comment lines (the grams of each filament and the preset
@@ -50,6 +53,7 @@ def summary(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--url", required=True, help="Rollcall's address, like http://rollcall.local:8080")
+    parser.add_argument("--token", help="An API token from Rollcall's Settings (or set ROLLCALL_TOKEN)")
     parser.add_argument("--name", help="The print's name (default: the exported file's name)")
     parser.add_argument("--timeout", type=float, default=10, help="Seconds to wait for Rollcall")
     parser.add_argument("gcode", help="The G-code file (the slicer passes it)")
@@ -60,13 +64,17 @@ def main():
     url = args.url.rstrip("/") + "/api/prints?" + urllib.parse.urlencode({"name": os.path.basename(name)})
     try:
         body = summary(args.gcode).encode("utf-8")
-        req = urllib.request.Request(
-            url, data=body, method="POST", headers={"Content-Type": "text/plain; charset=utf-8"}
-        )
+        headers = {"Content-Type": "text/plain; charset=utf-8"}
+        token = args.token or os.environ.get("ROLLCALL_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        req = urllib.request.Request(url, data=body, method="POST", headers=headers)
         with urllib.request.urlopen(req, timeout=args.timeout) as resp:
             print(f"Rollcall: logged the print (HTTP {resp.status}).")
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", "replace")[:300]
+        if e.code == 401:
+            detail = "check the API token (--token or ROLLCALL_TOKEN). " + detail
         print(f"Rollcall: the print wasn't logged (HTTP {e.code}): {detail}", file=sys.stderr)
     except Exception as e:  # noqa: BLE001 - never stop the slicer's export
         print(f"Rollcall: couldn't reach {args.url}: {e}", file=sys.stderr)

@@ -451,3 +451,38 @@ export interface SlicerProfile {
 	name: string;
 	filament_id: string;
 }
+
+export interface User {
+	id: string;
+	username: string;
+	is_admin: boolean;
+	created_at: string;
+}
+
+export interface AuthStatus {
+	/** No accounts yet: registering creates the admin. */
+	setup_needed: boolean;
+	registration_enabled: boolean;
+	user: User | null;
+}
+
+export interface Credentials {
+	username: string;
+	password: string;
+}
+
+export interface ApiToken {
+	id: string;
+	name: string;
+	created_at: string;
+	last_used_at: string | null;
+}
+
+/** A new token with its secret, which is only shown once. */
+export interface NewApiToken extends ApiToken {
+	secret: string;
+}
+
+export interface AdminSettings {
+	registration_enabled: boolean;
+}

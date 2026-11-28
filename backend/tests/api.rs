@@ -5,7 +5,7 @@
 use axum::{
     Router,
     body::Body,
-    http::{Method, Request, StatusCode},
+    http::{HeaderMap, HeaderValue, Method, Request, StatusCode, header},
 };
 use http_body_util::BodyExt;
 use rollcall::{AppState, config::ScraperConfig, routes, scraper::ScraperService};
@@ -21,13 +21,48 @@ fn test_upload_dir() -> std::path::PathBuf {
     dir
 }
 
-fn app(pool: PgPool) -> Router {
-    let state = AppState {
+fn state(pool: PgPool) -> AppState {
+    AppState {
         pool,
         scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
         uploads: Arc::new(test_upload_dir()),
-    };
-    routes::api(state)
+    }
+}
+
+async fn app(pool: PgPool) -> Router {
+    signed_in(state(pool)).await
+}
+
+/// The API, signed in as a new admin through an API token on every request.
+async fn signed_in(state: AppState) -> Router {
+    let pool = state.pool.clone();
+    let hash = rollcall::auth::hash_password("test password")
+        .await
+        .unwrap();
+    let user = rollcall::repo::accounts::create_user(&pool, "tester", &hash, false)
+        .await
+        .unwrap();
+    let secret = rollcall::auth::new_secret();
+    rollcall::repo::accounts::create_token(
+        &pool,
+        user.id,
+        "tests",
+        &rollcall::auth::hash_secret(&secret),
+    )
+    .await
+    .unwrap();
+    let bearer = HeaderValue::from_str(&format!("Bearer {secret}")).unwrap();
+    routes::api(state).layer(axum::middleware::map_request(
+        move |mut req: Request<Body>| {
+            let bearer = bearer.clone();
+            async move {
+                req.headers_mut()
+                    .entry(header::AUTHORIZATION)
+                    .or_insert(bearer);
+                req
+            }
+        },
+    ))
 }
 
 async fn call(app: &Router, method: Method, uri: &str, body: Option<Value>) -> (StatusCode, Value) {
@@ -68,7 +103,7 @@ fn new_spool(color: &str, hex: &str, weight: f64) -> Value {
 
 #[sqlx::test]
 async fn spool_lifecycle(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
 
     let (status, spool) = call(
         &app,
@@ -163,7 +198,7 @@ async fn spool_lifecycle(pool: PgPool) {
 
 #[sqlx::test]
 async fn filters_and_search(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let (_, loc) = call(
         &app,
         Method::POST,
@@ -207,7 +242,7 @@ async fn filters_and_search(pool: PgPool) {
 
 #[sqlx::test]
 async fn validation_errors(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let mut bad = new_spool("Blue", "#0000FF", 1000.0);
     bad["filament"]["material_code"] = json!("UNOBTAINIUM");
     let (status, body) = call(&app, Method::POST, "/spools", Some(bad)).await;
@@ -299,7 +334,7 @@ async fn serves_frontend_with_spa_fallback(pool: PgPool) {
 
 #[sqlx::test]
 async fn edit_filament(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let (status, spool) = call(
         &app,
         Method::POST,
@@ -364,7 +399,7 @@ async fn edit_filament(pool: PgPool) {
 
 #[sqlx::test]
 async fn settings_printers_and_locations(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
 
     // Settings: defaults, update, and the dashboard follows the threshold.
     let (status, s) = call(&app, Method::GET, "/settings", None).await;
@@ -502,7 +537,7 @@ async fn settings_printers_and_locations(pool: PgPool) {
 
 #[sqlx::test]
 async fn tuned_settings_per_printer(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let (_, spool) = call(
         &app,
         Method::POST,
@@ -617,7 +652,7 @@ async fn tuned_settings_per_printer(pool: PgPool) {
 
 #[sqlx::test]
 async fn acquisition_and_discount(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
 
     // Defaults: bought, no discount.
     let (_, plain) = call(
@@ -659,7 +694,7 @@ async fn acquisition_and_discount(pool: PgPool) {
 
 #[sqlx::test]
 async fn humidity_readings(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let (_, spool) = call(
         &app,
         Method::POST,
@@ -744,7 +779,7 @@ async fn humidity_readings(pool: PgPool) {
 
 #[sqlx::test]
 async fn equipment_and_accessories(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let (_, x1) = call(
         &app,
         Method::POST,
@@ -961,11 +996,12 @@ async fn upload(
 #[sqlx::test]
 async fn photos(pool: PgPool) {
     let dir = test_upload_dir();
-    let app = routes::api(AppState {
+    let app = signed_in(AppState {
         pool: pool.clone(),
         scraper: Arc::new(ScraperService::new(&ScraperConfig::default(), None).unwrap()),
         uploads: Arc::new(dir.clone()),
-    });
+    })
+    .await;
     let files = || std::fs::read_dir(&dir).unwrap().count();
     let png: &[u8] = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR fake png body";
     let jpg: &[u8] = b"\xFF\xD8\xFF\xE0\0\x10JFIF fake jpeg body";
@@ -1172,7 +1208,7 @@ fn orca_gcode(slots: &[(&str, &str)]) -> String {
 
 #[sqlx::test]
 async fn prints_from_the_slicer(pool: PgPool) {
-    let app = app(pool);
+    let app = app(pool).await;
     let weight = |s: &Value| s["remaining_weight_g"].as_f64().unwrap();
     let (_, red) = call(
         &app,
@@ -1357,4 +1393,310 @@ async fn prints_from_the_slicer(pool: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+/// A request with optional `Cookie` or `Authorization` header, returning the response headers too.
+async fn send(
+    app: &Router,
+    method: Method,
+    uri: &str,
+    body: Option<Value>,
+    auth: Option<(header::HeaderName, String)>,
+) -> (StatusCode, HeaderMap, Value) {
+    let mut req = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header("content-type", "application/json");
+    if let Some((name, value)) = auth {
+        req = req.header(name, value);
+    }
+    let req = req
+        .body(body.map_or_else(Body::empty, |b| Body::from(b.to_string())))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    let json = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+    (status, headers, json)
+}
+
+/// The `rollcall_session=...` pair from a response's Set-Cookie.
+fn cookie(headers: &HeaderMap) -> (header::HeaderName, String) {
+    let set = headers[header::SET_COOKIE].to_str().unwrap();
+    (header::COOKIE, set.split(';').next().unwrap().to_string())
+}
+
+#[sqlx::test]
+async fn accounts_and_sign_in(pool: PgPool) {
+    let app = routes::api(state(pool));
+    let creds = |u: &str, p: &str| Some(json!({ "username": u, "password": p }));
+
+    // Nothing but health and the sign-in routes without an account.
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _, _) = send(&app, Method::GET, "/health", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, _, st) = send(&app, Method::GET, "/auth/status", None, None).await;
+    assert_eq!(st["setup_needed"], true);
+    assert_eq!(st["registration_enabled"], false);
+    assert!(st["user"].is_null());
+
+    // The first account is the admin, even with registration off.
+    let (status, _, body) = send(
+        &app,
+        Method::POST,
+        "/auth/register",
+        creds("ad", "short"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    let (status, h, admin) = send(
+        &app,
+        Method::POST,
+        "/auth/register",
+        creds("Chris", "correct horse"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{admin}");
+    assert_eq!(admin["is_admin"], true);
+    let set = h[header::SET_COOKIE].to_str().unwrap();
+    assert!(
+        set.contains("HttpOnly") && set.contains("SameSite=Lax"),
+        "{set}"
+    );
+    let chris = cookie(&h);
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, Some(chris.clone())).await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, _, st) = send(&app, Method::GET, "/auth/status", None, Some(chris.clone())).await;
+    assert_eq!(st["setup_needed"], false);
+    assert_eq!(st["user"]["username"], "Chris");
+
+    // Registration is off until the admin turns it on.
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/auth/register",
+        creds("sam", "sam password"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = send(
+        &app,
+        Method::PUT,
+        "/admin/settings",
+        Some(json!({ "registration_enabled": true })),
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, h, sam) = send(
+        &app,
+        Method::POST,
+        "/auth/register",
+        creds("sam", "sam password"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{sam}");
+    assert_eq!(sam["is_admin"], false);
+    let sam_cookie = cookie(&h);
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/auth/register",
+        creds("SAM", "another one"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    // Only an admin manages accounts.
+    let (status, _, _) = send(&app, Method::GET, "/users", None, Some(sam_cookie.clone())).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, users) = send(&app, Method::GET, "/users", None, Some(chris.clone())).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(users.as_array().unwrap().len(), 2);
+
+    // Signing in: wrong password, any-case username, then sign out.
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/auth/login",
+        creds("chris", "wrong password"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/auth/login",
+        creds("nobody", "correct horse"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, h, _) = send(
+        &app,
+        Method::POST,
+        "/auth/login",
+        creds("chris", "correct horse"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let second = cookie(&h);
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/auth/logout",
+        None,
+        Some(second.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, Some(second)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // API tokens work as a Bearer header and can be revoked.
+    let (status, _, tok) = send(
+        &app,
+        Method::POST,
+        "/account/tokens",
+        Some(json!({ "name": "OrcaSlicer" })),
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{tok}");
+    let secret = tok["secret"].as_str().unwrap().to_string();
+    assert!(secret.starts_with("rc_"));
+    let bearer = (header::AUTHORIZATION, format!("Bearer {secret}"));
+    let (status, _, _) = send(&app, Method::GET, "/stats", None, Some(bearer.clone())).await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, _, list) = send(
+        &app,
+        Method::GET,
+        "/account/tokens",
+        None,
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(list[0]["name"], "OrcaSlicer");
+    assert!(list[0]["secret"].is_null());
+    assert!(!list[0]["last_used_at"].is_null());
+    let id = tok["id"].as_str().unwrap();
+    let (status, _, _) = send(
+        &app,
+        Method::DELETE,
+        &format!("/account/tokens/{id}"),
+        None,
+        Some(sam_cookie.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "someone else's token");
+    let (status, _, _) = send(
+        &app,
+        Method::DELETE,
+        &format!("/account/tokens/{id}"),
+        None,
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = send(&app, Method::GET, "/stats", None, Some(bearer)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // Changing a password signs out other sessions, not this one.
+    let (status, _, _) = send(
+        &app,
+        Method::PUT,
+        "/account/password",
+        Some(json!({ "current_password": "nope", "new_password": "new password" })),
+        Some(sam_cookie.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (_, h, _) = send(
+        &app,
+        Method::POST,
+        "/auth/login",
+        creds("sam", "sam password"),
+        None,
+    )
+    .await;
+    let sam_other = cookie(&h);
+    let (status, _, _) = send(
+        &app,
+        Method::PUT,
+        "/account/password",
+        Some(json!({ "current_password": "sam password", "new_password": "new password" })),
+        Some(sam_cookie.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, Some(sam_cookie.clone())).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, Some(sam_other)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // There's always an admin, and admins can't remove themselves.
+    let chris_id = admin["id"].as_str().unwrap();
+    let sam_id = sam["id"].as_str().unwrap();
+    let (status, _, _) = send(
+        &app,
+        Method::PUT,
+        &format!("/users/{chris_id}"),
+        Some(json!({ "is_admin": false })),
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (status, _, _) = send(
+        &app,
+        Method::DELETE,
+        &format!("/users/{chris_id}"),
+        None,
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _, _) = send(
+        &app,
+        Method::PUT,
+        &format!("/users/{sam_id}/password"),
+        Some(json!({ "password": "reset by admin" })),
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = send(&app, Method::GET, "/spools", None, Some(sam_cookie.clone())).await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "a reset signs the account out"
+    );
+    let (status, _, _) = send(
+        &app,
+        Method::POST,
+        "/users",
+        creds("kid", "kid password"),
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let (status, _, _) = send(
+        &app,
+        Method::DELETE,
+        &format!("/users/{sam_id}"),
+        None,
+        Some(chris.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, _, users) = send(&app, Method::GET, "/users", None, Some(chris)).await;
+    assert_eq!(users.as_array().unwrap().len(), 2);
 }

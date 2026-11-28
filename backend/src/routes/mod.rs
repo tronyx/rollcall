@@ -1,5 +1,5 @@
 use crate::{AppState, config::Config};
-use axum::{Json, Router, http::HeaderValue, routing::get};
+use axum::{Json, Router, http::HeaderValue, middleware, routing::get};
 use serde_json::json;
 use tower_http::{
     compression::CompressionLayer,
@@ -8,6 +8,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
+mod auth;
 mod equipment;
 mod filaments;
 mod humidity;
@@ -19,10 +20,11 @@ mod spools;
 mod stats;
 mod tuned;
 
-/// API routes only; used by `router` and by integration tests.
+/// API routes only; used by `router` and by integration tests. Everything
+/// but health and signing in needs a session cookie or an API token.
 pub fn api(state: AppState) -> Router {
-    Router::new()
-        .route("/health", get(|| async { Json(json!({ "status": "ok" })) }))
+    let protected = Router::new()
+        .merge(auth::routes())
         .merge(spools::routes())
         .merge(filaments::routes())
         .merge(lookups::routes())
@@ -33,6 +35,14 @@ pub fn api(state: AppState) -> Router {
         .merge(equipment::routes())
         .merge(photos::routes())
         .merge(prints::routes())
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            crate::auth::require_user,
+        ));
+    Router::new()
+        .route("/health", get(|| async { Json(json!({ "status": "ok" })) }))
+        .merge(auth::public_routes())
+        .merge(protected)
         .with_state(state)
 }
 

@@ -1,6 +1,7 @@
 //! All SQL lives here. Every query uses sqlx's compile-time checked macros;
 //! run `cargo sqlx prepare` after changing one so CI can build offline.
 
+pub mod accounts;
 pub mod equipment;
 pub mod filaments;
 pub mod humidity;

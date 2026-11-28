@@ -3,6 +3,7 @@
 //! Weights and prices are `Decimal` (Postgres NUMERIC) and serialize as JSON
 //! numbers so the frontend can do arithmetic directly.
 
+mod account;
 mod enums;
 mod equipment;
 mod filament;
@@ -14,6 +15,7 @@ mod spool;
 mod stats;
 mod tuned;
 
+pub use account::*;
 pub use enums::*;
 pub use equipment::*;
 pub use filament::*;

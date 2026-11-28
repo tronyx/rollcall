@@ -24,6 +24,7 @@ Paste an Amazon or manufacturer link, and Rollcall fills in the brand, material,
 - 📷 **Photos**: add your own photos to spools, filaments, equipment, and accessories, with captions.
 - 🧾 **Print logging**: OrcaSlicer and Bambu Studio send each print's filament use to Rollcall, which takes it off the right spool.
 - 🧵 **Spool page**: the full weight history, and editing of the spool and its filament.
+- 🔐 **Accounts**: sign in with a username and password. The first account is the admin, who decides whether people can register and manages the others. API tokens let scripts, such as the print logger, sign in.
 - ⚙️ **Settings**: your locations, your printers, the low-stock threshold, and the default currency.
 - 🔗 **Link parser**: reads Shopify stores, schema.org data, Amazon pages, spec tables, and the page text. A blocked page still gives you a partly filled form. An optional LLM step fills the remaining gaps. See [Link parser](docs/link-parser.md).
 - 🖨️ **Print profiles**: the manufacturer's temperature ranges stored with each filament, and the HueForge TD value.
