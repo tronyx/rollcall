@@ -8,6 +8,7 @@ The project doesn't use version numbers. Each entry is one merge into `main`, wh
 
 ### Added
 
+- A Rollcall logo: the full logo (`logo.svg`), an icon-only mark (`logo-mark.svg`) in the app header, and a new favicon.
 - Print logging from OrcaSlicer and Bambu Studio: a post-processing script (`rollcall-print.py`) sends the grams of each filament, and Rollcall takes them from the spool of the preset's filament, or asks on the new **Prints** page. Exported presets are recognized, and so is a preset after you pick its spool once. Undo, skip, and delete put the filament back. New endpoints: `/api/prints` and `/api/slicer-profiles`. See [Usage](docs/usage.md#-prints-from-your-slicer).
 - Export tuned settings as an OrcaSlicer or Bambu Studio filament preset, based on the slicer's generic preset for the material and printer, to import with **Import Configs**. See [Usage](docs/usage.md#-export-to-your-slicer).
 - Your own photos for spools, filaments, and equipment and accessories, with captions and a viewer. The first photo of an item shows on its card. Photos are files in the new `UPLOAD_DIR` folder (`/app/uploads`, a volume, in the image). New endpoints: `/api/photos` and `/api/photos/{id}`. See [Usage](docs/usage.md#-photos).

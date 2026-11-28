@@ -79,7 +79,7 @@
 
 <header class="mb-4 flex items-center justify-between gap-2">
 	<h1 class="flex items-center gap-2 text-xl font-bold tracking-tight">
-		<img src="/favicon.svg" alt="" class="size-7" /> Rollcall
+		<img src="/logo-mark.svg" alt="" class="h-8 w-auto" /> Rollcall
 	</h1>
 	<nav class="flex items-center gap-2 sm:gap-3" aria-label="Pages">
 		<a
