@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT registration_enabled FROM app_settings",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "registration_enabled",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b3dc748a7f7680874827eebf07486d95428949a9d88225900d58cf30bc1108af"
+}

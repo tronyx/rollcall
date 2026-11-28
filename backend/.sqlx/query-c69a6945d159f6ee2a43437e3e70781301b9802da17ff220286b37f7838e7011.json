@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH t AS (\n            UPDATE api_tokens SET last_used_at = now()\n            WHERE token_hash = $1\n            RETURNING user_id\n        )\n        SELECT u.id, u.username, u.is_admin, u.created_at\n        FROM t JOIN users u ON u.id = t.user_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_admin",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c69a6945d159f6ee2a43437e3e70781301b9802da17ff220286b37f7838e7011"
+}

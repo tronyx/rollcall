@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE app_settings SET registration_enabled = $1 RETURNING registration_enabled",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "registration_enabled",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "162f88076a0cb8abe10b0fe83acb0db9249ca32df3e45be56394497065ff75fd"
+}

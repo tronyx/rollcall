@@ -61,6 +61,7 @@ rollcall/
 │   │   ├── config.rs
 │   │   ├── db.rs                # PgPool setup, sqlx::migrate!()
 │   │   ├── error.rs             # AppError -> IntoResponse
+│   │   ├── auth.rs              # passwords, session cookie, API tokens, require_user middleware
 │   │   ├── routes/              # one module per resource
 │   │   │   ├── mod.rs           # Router assembly, /api prefix, static frontend fallback
 │   │   │   ├── spools.rs        # CRUD, POST /spools/{id}/weight (quick adjust, log print, weigh-in)
@@ -114,6 +115,7 @@ See [`backend/migrations/0001_initial_schema.sql`](../backend/migrations/0001_in
 - **Tuned overrides** (`tuned_settings`) are per filament per printer, with an optional "any printer" row. The `effective_print_settings` view resolves printer override, then general override, then manufacturer value.
 - **Photos** (`photos`) belong to exactly one spool, filament, or piece of equipment (a `CHECK` on `num_nonnulls`) and are deleted with it. The image is a file named `<id>.<ext>` in `UPLOAD_DIR`; the row keeps its type, size, and caption. The type is read from the file's first bytes, and the file is served with `nosniff` and a sandboxing CSP. At startup, files no row names are removed.
 - **Prints** (`prints`, `print_slots`) are what a slicer upload used, per filament slot. A logged slot points at the weight event that took its grams, so undo can give back exactly that. `slicer_profiles` maps a slicer preset name to a filament. The G-code parser is `backend/src/gcode.rs`.
+- **Accounts** (`users`, `sessions`, `api_tokens`; `0007_accounts.sql`). Passwords are Argon2id hashes. A browser session is a random token in an `HttpOnly`, `SameSite=Lax` cookie, and an API token is sent as `Authorization: Bearer`; the database keeps only the SHA-256 of either. `auth::require_user` guards every API route but `/health` and `/auth/*`. `app_settings.registration_enabled` decides whether anyone but the first account can register. Changes that could remove the last admin take an advisory lock.
 - **Keys are UUIDv7** (`uuidv7()`, PostgreSQL 18), so new rows sort by creation time and index inserts stay local.
 - **TD value** (HueForge transmission distance) is stored per filament.
 - **Dashboard** reads `inventory_stats` and `spool_inventory`; the low-stock threshold lives in `app_settings` (default 200 g).

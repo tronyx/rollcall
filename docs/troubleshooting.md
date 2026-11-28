@@ -20,6 +20,14 @@ A volume made by PostgreSQL 17 or older, mounted at `/var/lib/postgresql/data`, 
 
 sqlx checks queries against a live database when `DATABASE_URL` is set. Either run the migrations on that database first (`cargo run` does it), or build against the committed metadata with `SQLX_OFFLINE=true`.
 
+## 🔐 Locked out
+
+Another admin can reset your password in **Settings › Accounts**. If there's no one else, run `docker compose exec rollcall rollcall reset-password USERNAME`. It prints a new random password and signs the account out everywhere.
+
+## 🧾 The slicer script says HTTP 401
+
+The script needs an API token. Create one under **Settings › Your account** and add `--token` with it to the script's line in the slicer, or set `ROLLCALL_TOKEN`.
+
 ## 🪲 Still stuck?
 
 [Open an issue](https://github.com/tronyx/rollcall/issues/new/choose) with the server log (`docker compose logs rollcall`).

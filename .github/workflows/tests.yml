@@ -198,11 +198,16 @@ jobs:
           test "$(docker inspect --format '{{.Config.User}}' "$IMAGE")" = "10001"
           curl -fsS http://localhost:8080/ | grep -q '<title>Rollcall</title>'
           curl -fsS http://localhost:8080/some/client/route | grep -q '<title>Rollcall</title>'
-          curl -fsS http://localhost:8080/api/materials | grep -q '"code":"PETG"'
-          curl -fsS -X POST http://localhost:8080/api/spools -H 'content-type: application/json' \
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/stats)" = "401"
+          curl -fsS -c jar -X POST http://localhost:8080/api/auth/register -H 'content-type: application/json' \
+            -d '{"username":"ci","password":"ci password"}' | grep -q '"is_admin":true'
+          curl -fsS -b jar http://localhost:8080/api/materials | grep -q '"code":"PETG"'
+          curl -fsS -b jar -X POST http://localhost:8080/api/spools -H 'content-type: application/json' \
             -d '{"filament":{"brand_name":"CI","material_code":"PLA","color_name":"Black"},"initial_weight_g":1000}' \
             | grep -q '"brand_name":"CI"'
-          curl -fsS http://localhost:8080/api/stats | grep -q '"spools_in_stock":1'
+          curl -fsS -b jar http://localhost:8080/api/stats | grep -q '"spools_in_stock":1'
+          docker exec app rollcall reset-password ci | grep -q 'New password for ci'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b jar http://localhost:8080/api/stats)" = "401"
       - name: Server log
         if: always()
         run: docker logs app 2>&1 | tail -50 || true

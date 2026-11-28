@@ -25,7 +25,9 @@
 	let notice = $state<string | null>(null);
 
 	const origin = page.url.origin;
-	const scriptLine = $derived(`"python3" "/path/to/rollcall-print.py" --url ${origin}`);
+	const scriptLine = $derived(
+		`"python3" "/path/to/rollcall-print.py" --url ${origin} --token YOUR_TOKEN`
+	);
 	let copied = $state(false);
 
 	async function load() {
@@ -184,9 +186,14 @@
 				somewhere it can stay.
 			</li>
 			<li>
+				Create an API token under <a href={resolve('/settings')} class={small}>
+					Settings › API tokens
+				</a>, and copy it.
+			</li>
+			<li>
 				In the slicer, open the process settings, then <strong>
 					Others › Post-processing Scripts
-				</strong>, and add this line, with the script's real path:
+				</strong>, and add this line, with the script's real path and your token:
 				<div class="mt-2 flex gap-2">
 					<code
 						class="min-w-0 flex-1 overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 text-xs whitespace-nowrap dark:bg-slate-800"

@@ -1,4 +1,10 @@
 import type {
+	AdminSettings,
+	ApiToken,
+	AuthStatus,
+	Credentials,
+	NewApiToken,
+	User,
 	AppSettings,
 	Brand,
 	CreateSpool,
@@ -54,6 +60,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 	} catch {
 		throw new ApiError(0, 'network', "Can't reach the Rollcall server.");
 	}
+	// Signed out (or the session expired): back to the login page.
+	if (res.status === 401 && !path.startsWith('/auth/')) onSignedOut();
 	if (res.status === 204) return undefined as T;
 	const data = await res.json().catch(() => null);
 	if (!res.ok) {
@@ -64,6 +72,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 		);
 	}
 	return data as T;
+}
+
+let onSignedOut = () => {};
+
+/** Sets what happens when the server says the session is gone. */
+export function handleSignedOut(fn: () => void) {
+	onSignedOut = fn;
 }
 
 export function toQuery(params: object): string {
@@ -77,6 +92,24 @@ export function toQuery(params: object): string {
 }
 
 export const api = {
+	authStatus: () => request<AuthStatus>('GET', '/auth/status'),
+	login: (body: Credentials) => request<User>('POST', '/auth/login', body),
+	register: (body: Credentials) => request<User>('POST', '/auth/register', body),
+	logout: () => request<void>('POST', '/auth/logout'),
+	changePassword: (current_password: string, new_password: string) =>
+		request<void>('PUT', '/account/password', { current_password, new_password }),
+	tokens: () => request<ApiToken[]>('GET', '/account/tokens'),
+	createToken: (name: string) => request<NewApiToken>('POST', '/account/tokens', { name }),
+	deleteToken: (id: string) => request<void>('DELETE', `/account/tokens/${id}`),
+	users: () => request<User[]>('GET', '/users'),
+	addUser: (body: Credentials) => request<User>('POST', '/users', body),
+	setAdmin: (id: string, is_admin: boolean) => request<User>('PUT', `/users/${id}`, { is_admin }),
+	resetPassword: (id: string, password: string) =>
+		request<void>('PUT', `/users/${id}/password`, { password }),
+	deleteUser: (id: string) => request<void>('DELETE', `/users/${id}`),
+	adminSettings: () => request<AdminSettings>('GET', '/admin/settings'),
+	updateAdminSettings: (body: AdminSettings) =>
+		request<AdminSettings>('PUT', '/admin/settings', body),
 	stats: () => request<InventoryStats>('GET', '/stats'),
 	spools: (filter: SpoolFilter = {}) => request<Spool[]>('GET', `/spools${toQuery(filter)}`),
 	spool: (id: string) => request<Spool>('GET', `/spools/${id}`),
